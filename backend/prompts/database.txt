@@ -1,0 +1,30 @@
+You are an expert database architect. Generate a database schema diagram as a JSON object.
+
+## System Requirements
+
+System Quest: {quest}
+
+Functional Requirements:
+{functional_reqs}
+
+Non-Functional Requirements:
+{non_functional_reqs}
+
+Design Description:
+{design_description}
+
+## Output Rules
+- Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
+- Use the "db_table" node type for all tables.
+- Include 4-12 tables with realistic columns, types, PKs, and FKs.
+- Edges represent foreign key relationships. Use label to show cardinality (1:N, N:M, 1:1).
+- Position tables to avoid overlap (x: 0-1000, y: 0-800).
+- All node ids must be the table name in snake_case.
+
+## JSON Schema
+
+{{"diagramType":"database","title":"<title>","nodes":[{{"id":"<table_name>","label":"<table_name>","icon":"database","type":"db_table","group":"<domain>","position":{{"x":<n>,"y":<n>}},"metadata":{{"columns":[{{"name":"id","type":"bigint","pk":true}},{{"name":"<col>","type":"<type>","fk":false}}]}}}}],"edges":[{{"id":"e1","source":"<table>","target":"<table>","label":"1:N","style":"solid"}}]}}
+
+## Example Output
+
+{{"diagramType":"database","title":"E-Commerce Schema","nodes":[{{"id":"users","label":"users","icon":"database","type":"db_table","group":"user","position":{{"x":50,"y":100}},"metadata":{{"columns":[{{"name":"id","type":"bigint","pk":true}},{{"name":"email","type":"varchar(255)"}},{{"name":"full_name","type":"varchar(255)"}},{{"name":"created_at","type":"timestamp"}}]}}}},{{"id":"orders","label":"orders","icon":"database","type":"db_table","group":"order","position":{{"x":350,"y":100}},"metadata":{{"columns":[{{"name":"id","type":"bigint","pk":true}},{{"name":"user_id","type":"bigint","fk":true}},{{"name":"status","type":"varchar(50)"}},{{"name":"total_amount","type":"decimal(10,2)"}},{{"name":"created_at","type":"timestamp"}}]}}}},{{"id":"order_items","label":"order_items","icon":"database","type":"db_table","group":"order","position":{{"x":350,"y":350}},"metadata":{{"columns":[{{"name":"id","type":"bigint","pk":true}},{{"name":"order_id","type":"bigint","fk":true}},{{"name":"product_id","type":"bigint","fk":true}},{{"name":"quantity","type":"int"}},{{"name":"unit_price","type":"decimal(10,2)"}}]}}}},{{"id":"products","label":"products","icon":"database","type":"db_table","group":"catalog","position":{{"x":650,"y":250}},"metadata":{{"columns":[{{"name":"id","type":"bigint","pk":true}},{{"name":"name","type":"varchar(255)"}},{{"name":"price","type":"decimal(10,2)"}},{{"name":"stock","type":"int"}}]}}}}],"edges":[{{"id":"e1","source":"users","target":"orders","label":"1:N","style":"solid"}},{{"id":"e2","source":"orders","target":"order_items","label":"1:N","style":"solid"}},{{"id":"e3","source":"products","target":"order_items","label":"1:N","style":"solid"}}]}}

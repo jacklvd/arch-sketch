@@ -1,0 +1,34 @@
+You are an expert software architect. Generate a low-level design diagram showing internal component structure as a JSON object.
+
+## System Requirements
+
+System Quest: {quest}
+
+Functional Requirements:
+{functional_reqs}
+
+Non-Functional Requirements:
+{non_functional_reqs}
+
+Design Description:
+{design_description}
+
+## Available Icon Keys
+Only use these icon keys:
+{icon_keys}
+
+## Output Rules
+- Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
+- Show internal layers of the most important service: Controller → Service → Repository → Database.
+- Include design patterns as nodes (e.g. Observer, Factory, Singleton) where applicable.
+- Show data flow arrows between layers with labels describing what data flows.
+- Use groups to separate layers (e.g., "API Layer", "Business Logic", "Data Layer").
+- Position components in a top-to-bottom layered layout.
+
+## JSON Schema
+
+{{"diagramType":"low_level","title":"<title>","nodes":[{{"id":"<id>","label":"<label>","icon":"<icon>","group":"<layer>","position":{{"x":<n>,"y":<n>}},"metadata":{{"tech":["<tech>"]}}}}],"edges":[{{"id":"e1","source":"<id>","target":"<id>","label":"<data flow>","style":"solid"}}],"groups":[{{"id":"<gid>","label":"<layer name>","nodeIds":["<id1>"],"style":"dashed_border"}}]}}
+
+## Example Output
+
+{{"diagramType":"low_level","title":"Order Service — Internal Design","nodes":[{{"id":"order_controller","label":"OrderController","icon":"server","group":"api_layer","position":{{"x":300,"y":50}},"metadata":{{"tech":["Spring MVC","REST"]}}}},{{"id":"order_service","label":"OrderService","icon":"microservice","group":"business","position":{{"x":300,"y":200}},"metadata":{{"tech":["Spring Service"]}}}},{{"id":"payment_facade","label":"PaymentFacade","icon":"microservice","group":"business","position":{{"x":550,"y":200}},"metadata":{{"tech":["Facade Pattern"]}}}},{{"id":"order_repo","label":"OrderRepository","icon":"database","group":"data_layer","position":{{"x":200,"y":380}},"metadata":{{"tech":["JPA","Hibernate"]}}}},{{"id":"event_publisher","label":"EventPublisher","icon":"queue","group":"business","position":{{"x":550,"y":380}},"metadata":{{"tech":["Observer Pattern","Kafka"]}}}},{{"id":"postgres","label":"PostgreSQL","icon":"postgres","group":"data_layer","position":{{"x":200,"y":550}}}},{{"id":"kafka","label":"Kafka Topic","icon":"kafka","group":"data_layer","position":{{"x":550,"y":550}}}}],"edges":[{{"id":"e1","source":"order_controller","target":"order_service","label":"CreateOrderRequest","style":"solid"}},{{"id":"e2","source":"order_service","target":"payment_facade","label":"ChargeRequest","style":"solid"}},{{"id":"e3","source":"order_service","target":"order_repo","label":"save(order)","style":"solid"}},{{"id":"e4","source":"order_service","target":"event_publisher","label":"OrderCreatedEvent","style":"solid"}},{{"id":"e5","source":"order_repo","target":"postgres","label":"SQL INSERT","style":"solid"}},{{"id":"e6","source":"event_publisher","target":"kafka","label":"publish event","style":"animated"}}],"groups":[{{"id":"g_api","label":"API Layer","nodeIds":["order_controller"],"style":"dashed_border"}},{{"id":"g_biz","label":"Business Logic","nodeIds":["order_service","payment_facade","event_publisher"],"style":"dashed_border"}},{{"id":"g_data","label":"Data Layer","nodeIds":["order_repo","postgres","kafka"],"style":"dashed_border"}}]}}

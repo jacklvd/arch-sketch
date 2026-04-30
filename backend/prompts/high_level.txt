@@ -1,0 +1,34 @@
+You are an expert system architect. Generate a high-level architecture diagram as a JSON object.
+
+## System Requirements
+
+System Quest: {quest}
+
+Functional Requirements:
+{functional_reqs}
+
+Non-Functional Requirements:
+{non_functional_reqs}
+
+Design Description:
+{design_description}
+
+## Available Icon Keys
+Only use these icon keys (use "unknown" if nothing fits):
+{icon_keys}
+
+## Output Rules
+- Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
+- Use 6-15 nodes for a readable diagram.
+- Position nodes left-to-right or top-to-bottom in logical layers (x: 0-1200, y: 0-800).
+- Group related services using the "groups" array.
+- Edge labels must describe the protocol or data flow (HTTPS, gRPC, WebSocket, SQL, etc.).
+- All node ids must be unique snake_case strings.
+
+## JSON Schema
+
+{{"diagramType":"high_level","title":"<title>","nodes":[{{"id":"<id>","label":"<label>","icon":"<icon_key>","group":"<group>","position":{{"x":<number>,"y":<number>}},"metadata":{{"tech":["<tech1>"]}}}}],"edges":[{{"id":"e1","source":"<id>","target":"<id>","label":"<protocol>","style":"solid"}}],"groups":[{{"id":"<gid>","label":"<group label>","nodeIds":["<id1>","<id2>"],"style":"dashed_border"}}]}}
+
+## Example Output
+
+{{"diagramType":"high_level","title":"E-Commerce Platform","nodes":[{{"id":"mobile_client","label":"Mobile App","icon":"mobile","group":"clients","position":{{"x":50,"y":200}},"metadata":{{"tech":["React Native"]}}}},{{"id":"web_client","label":"Web Browser","icon":"browser","group":"clients","position":{{"x":50,"y":350}},"metadata":{{"tech":["React"]}}}},{{"id":"cdn","label":"CloudFront CDN","icon":"aws_cloudfront","group":"networking","position":{{"x":250,"y":275}}}},{{"id":"api_gw","label":"API Gateway","icon":"aws_api_gateway","group":"networking","position":{{"x":450,"y":275}}}},{{"id":"auth_svc","label":"Auth Service","icon":"aws_cognito","group":"backend","position":{{"x":650,"y":150}},"metadata":{{"tech":["Node.js"]}}}},{{"id":"order_svc","label":"Order Service","icon":"microservice","group":"backend","position":{{"x":650,"y":300}},"metadata":{{"tech":["Java","Spring Boot"]}}}},{{"id":"product_svc","label":"Product Service","icon":"microservice","group":"backend","position":{{"x":650,"y":450}},"metadata":{{"tech":["Python"]}}}},{{"id":"postgres","label":"PostgreSQL","icon":"postgres","group":"data","position":{{"x":900,"y":300}}}},{{"id":"redis_cache","label":"Redis Cache","icon":"redis","group":"data","position":{{"x":900,"y":450}}}}],"edges":[{{"id":"e1","source":"mobile_client","target":"cdn","label":"HTTPS","style":"solid"}},{{"id":"e2","source":"web_client","target":"cdn","label":"HTTPS","style":"solid"}},{{"id":"e3","source":"cdn","target":"api_gw","label":"HTTPS","style":"solid"}},{{"id":"e4","source":"api_gw","target":"auth_svc","label":"REST","style":"solid"}},{{"id":"e5","source":"api_gw","target":"order_svc","label":"REST","style":"solid"}},{{"id":"e6","source":"api_gw","target":"product_svc","label":"REST","style":"solid"}},{{"id":"e7","source":"order_svc","target":"postgres","label":"SQL","style":"solid"}},{{"id":"e8","source":"product_svc","target":"redis_cache","label":"Cache","style":"dashed"}}],"groups":[{{"id":"g_clients","label":"Clients","nodeIds":["mobile_client","web_client"],"style":"dashed_border"}},{{"id":"g_backend","label":"Backend Services","nodeIds":["auth_svc","order_svc","product_svc"],"style":"dashed_border"}}]}}

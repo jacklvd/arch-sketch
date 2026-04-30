@@ -1,0 +1,34 @@
+You are an expert API architect. Generate an API design diagram as a JSON object.
+
+## System Requirements
+
+System Quest: {quest}
+
+Functional Requirements:
+{functional_reqs}
+
+Non-Functional Requirements:
+{non_functional_reqs}
+
+Design Description:
+{design_description}
+
+## Available Icon Keys
+Only use these icon keys:
+{icon_keys}
+
+## Output Rules
+- Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
+- Use the "api_service" node type for backend services.
+- Each service node must list its key endpoints in metadata.
+- Edges represent HTTP calls between client/gateway and services.
+- Include request edges (label: "HTTP METHOD /path") and response style edges where useful.
+- Position nodes in a gateway-fan-out pattern (gateway in center, services around it).
+
+## JSON Schema
+
+{{"diagramType":"api","title":"<title>","nodes":[{{"id":"<id>","label":"<label>","icon":"<icon>","type":"api_service","group":"<group>","position":{{"x":<n>,"y":<n>}},"metadata":{{"endpoints":[{{"method":"POST","path":"/resource","response":"201 Created"}}]}}}}],"edges":[{{"id":"e1","source":"<id>","target":"<id>","label":"HTTP POST /resource","style":"solid"}}]}}
+
+## Example Output
+
+{{"diagramType":"api","title":"E-Commerce API Design","nodes":[{{"id":"client","label":"Client App","icon":"browser","group":"client","position":{{"x":50,"y":300}}}},{{"id":"api_gateway","label":"API Gateway","icon":"aws_api_gateway","group":"networking","position":{{"x":300,"y":300}}}},{{"id":"auth_svc","label":"Auth Service","icon":"microservice","type":"api_service","group":"backend","position":{{"x":550,"y":100}},"metadata":{{"endpoints":[{{"method":"POST","path":"/auth/login","response":"200 OK"}},{{"method":"POST","path":"/auth/register","response":"201 Created"}},{{"method":"POST","path":"/auth/refresh","response":"200 OK"}}]}}}},{{"id":"order_svc","label":"Order Service","icon":"microservice","type":"api_service","group":"backend","position":{{"x":550,"y":300}},"metadata":{{"endpoints":[{{"method":"POST","path":"/orders","response":"201 Created"}},{{"method":"GET","path":"/orders/{{id}}","response":"200 OK"}},{{"method":"PUT","path":"/orders/{{id}}/cancel","response":"200 OK"}}]}}}},{{"id":"product_svc","label":"Product Service","icon":"microservice","type":"api_service","group":"backend","position":{{"x":550,"y":500}},"metadata":{{"endpoints":[{{"method":"GET","path":"/products","response":"200 OK"}},{{"method":"GET","path":"/products/{{id}}","response":"200 OK"}},{{"method":"POST","path":"/products","response":"201 Created"}}]}}}}],"edges":[{{"id":"e1","source":"client","target":"api_gateway","label":"HTTPS","style":"solid"}},{{"id":"e2","source":"api_gateway","target":"auth_svc","label":"HTTP POST /auth/login","style":"solid"}},{{"id":"e3","source":"api_gateway","target":"order_svc","label":"HTTP POST /orders","style":"solid"}},{{"id":"e4","source":"api_gateway","target":"product_svc","label":"HTTP GET /products","style":"solid"}}]}}
