@@ -13,11 +13,13 @@ import '@xyflow/react/dist/style.css'
 import { ArchitectureNode } from '../nodes/ArchitectureNode'
 import { TableNode } from '../nodes/TableNode'
 import { ServiceNode } from '../nodes/ServiceNode'
+import { GroupNode } from '../nodes/GroupNode'
 
 const nodeTypes = {
   architectureNode: ArchitectureNode,
   tableNode: TableNode,
   serviceNode: ServiceNode,
+  groupNode: GroupNode,
 }
 
 interface DiagramCanvasProps {

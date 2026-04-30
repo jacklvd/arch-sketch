@@ -27,7 +27,7 @@ export function ServiceNode({ data }: { data: ServiceNodeData }) {
     >
       <Handle type="target" position={Position.Left} style={{ background: '#9ca3af', width: 8, height: 8 }} />
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
-        <span className="text-base">{getIcon(data.icon)}</span>
+        {(() => { const ic = getIcon(data.icon); return ic.src ? <img src={ic.src} className="w-5 h-5 object-contain" alt="" /> : <span className="text-base">{ic.emoji}</span> })()}
         <span className="text-xs font-bold text-gray-800">{data.label}</span>
       </div>
       {endpoints.length > 0 && (

@@ -2,7 +2,7 @@ import { generateDiagram } from './api/generate'
 import { InputForm } from './components/InputForm'
 import { DiagramCanvas } from './components/DiagramCanvas'
 import { mapToReactFlow } from './lib/diagramMapper'
-import { applyLayout } from './lib/layoutEngine'
+import { applyLayoutWithGroups } from './lib/layoutEngine'
 import { useDiagramStore } from './store/diagramStore'
 import type { GenerateRequest } from './types/diagram'
 
@@ -29,7 +29,7 @@ export default function App() {
       const diagram = await generateDiagram(req)
       setDiagram(req.diagram_type, diagram)
       const { nodes: rfNodes, edges: rfEdges } = mapToReactFlow(diagram)
-      const layoutedNodes = applyLayout(rfNodes, rfEdges)
+      const layoutedNodes = applyLayoutWithGroups(rfNodes, rfEdges)
       setNodes(layoutedNodes)
       setEdges(rfEdges)
     } catch (e) {
