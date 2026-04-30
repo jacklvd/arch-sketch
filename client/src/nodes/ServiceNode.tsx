@@ -22,7 +22,7 @@ export function ServiceNode({ data }: { data: ServiceNodeData }) {
 
   return (
     <div
-      className="rounded-xl border-2 bg-white shadow-sm overflow-hidden min-w-[200px] max-w-[240px]"
+      className="rounded-xl border-2 bg-white shadow-sm overflow-hidden min-w-50 max-w-60"
       style={{ borderColor: data.color }}
     >
       <Handle type="target" position={Position.Left} style={{ background: '#9ca3af', width: 8, height: 8 }} />
