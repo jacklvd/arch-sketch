@@ -29,7 +29,14 @@ export default function App() {
       const diagram = await generateDiagram(req)
       setDiagram(req.diagram_type, diagram)
       const { nodes: rfNodes, edges: rfEdges } = mapToReactFlow(diagram)
-      const layoutedNodes = applyLayoutWithGroups(rfNodes, rfEdges)
+      const isDatabase = diagram.diagramType === 'database'
+      const layoutedNodes = applyLayoutWithGroups(rfNodes, rfEdges, {
+        direction: isDatabase ? 'TB' : 'LR',
+        nodeWidth: isDatabase ? 220 : 160,
+        nodeHeight: isDatabase ? 200 : 90,
+        nodeSep: isDatabase ? 60 : 80,
+        rankSep: isDatabase ? 100 : 140,
+      })
       setNodes(layoutedNodes)
       setEdges(rfEdges)
     } catch (e) {
@@ -63,7 +70,7 @@ export default function App() {
       {/* Canvas */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0 min-h-[46px]">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white shrink-0 min-h-11.5">
           <span className="text-sm text-gray-500 truncate">
             {currentDiagram ? currentDiagram.title : 'No diagram yet'}
           </span>

@@ -14,12 +14,17 @@ import { ArchitectureNode } from '../nodes/ArchitectureNode'
 import { TableNode } from '../nodes/TableNode'
 import { ServiceNode } from '../nodes/ServiceNode'
 import { GroupNode } from '../nodes/GroupNode'
+import { FKEdge } from '../edges/FKEdge'
 
 const nodeTypes = {
   architectureNode: ArchitectureNode,
   tableNode: TableNode,
   serviceNode: ServiceNode,
   groupNode: GroupNode,
+}
+
+const edgeTypes = {
+  fkEdge: FKEdge,
 }
 
 interface DiagramCanvasProps {
@@ -48,6 +53,7 @@ export function DiagramCanvas({ nodes: propNodes, edges: propEdges }: DiagramCan
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       fitView
       fitViewOptions={{ padding: 0.15 }}
       minZoom={0.1}
