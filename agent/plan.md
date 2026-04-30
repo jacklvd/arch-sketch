@@ -195,31 +195,31 @@ The AI model prompt includes a list of available icon keys so it picks from the 
 
 #### Backend
 
-- [ ] Init FastAPI project with `uv` or `poetry`
-- [ ] Create Pydantic models matching the JSON contract above
-- [ ] Build `/api/generate` endpoint — accepts `{ quest, functional_reqs, non_functional_reqs, design_description, diagram_type }`
-- [ ] Implement `OllamaClient` — calls local Gemma 4 via `POST http://localhost:11434/api/generate`
-- [ ] Implement `GeminiClient` — calls Gemini API via `google-genai` SDK
-- [ ] Build `ModelRouter` — tries Ollama first, validates JSON output, falls back to Gemini on failure
-- [ ] Build prompt templates (one per diagram type) that include:
+- [X] Init FastAPI project with `uv` or `poetry`
+- [X] Create Pydantic models matching the JSON contract above
+- [X] Build `/api/generate` endpoint — accepts `{ quest, functional_reqs, non_functional_reqs, design_description, diagram_type }`
+- [X] Implement `OllamaClient` — calls local Gemma 4 via `POST http://localhost:11434/api/generate`
+- [X] Implement `GeminiClient` — calls Gemini API via `google-genai` SDK
+- [X] Build `ModelRouter` — tries Ollama first, validates JSON output, falls back to Gemini on failure
+- [X] Build prompt templates (one per diagram type) that include:
   - The JSON schema the model must follow
   - The list of available icon keys
   - Example output for that diagram type
-- [ ] Add JSON validation/repair layer (strip markdown fences, fix trailing commas, etc.)
+- [X] Add JSON validation/repair layer (strip markdown fences, fix trailing commas, etc.)
 
 #### Frontend
 
 - [X] `npm create vite@latest frontend -- --template react-ts` - DONE and I used yarn as package management
-- [ ] Install: `reactflow`, `tailwindcss`, `@tailwindcss/vite`, `zustand`
-- [ ] Build the input form page (quest, FRs, NFRs, design description — textarea fields)
-- [ ] Build basic React Flow canvas that can render a hardcoded diagram JSON
-- [ ] Create `DiagramRenderer` that maps the JSON contract → React Flow nodes/edges
-- [ ] Set up icon registry with ~20 starter icons
+- [X] Install: `reactflow`, `tailwindcss`, `@tailwindcss/vite`, `zustand`
+- [X] Build the input form page (quest, FRs, NFRs, design description — textarea fields)
+- [X] Build basic React Flow canvas that can render a hardcoded diagram JSON
+- [X] Create `DiagramRenderer` that maps the JSON contract → React Flow nodes/edges
+- [X] Set up icon registry with ~20 starter icons
 
 #### Integration
 
-- [ ] Wire form submission → backend → display result on canvas
-- [ ] Add loading state with streaming indicator
+- [X] Wire form submission → backend → display result on canvas
+- [X] Add loading state with streaming indicator
 
 ---
 
