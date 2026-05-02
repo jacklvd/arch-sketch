@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 async def route_and_generate(prompt: str) -> DiagramResponse:
+    ollama_error: Exception | None = None
+
     if await ollama_available():
         try:
             logger.info("Routing to Ollama (gemma4:e4b)...")
@@ -15,9 +17,18 @@ async def route_and_generate(prompt: str) -> DiagramResponse:
             data = parse_diagram_json(raw)
             return DiagramResponse(**data)
         except Exception as e:
-            logger.warning(f"Ollama failed: {e} — falling back to Gemini")
+            ollama_error = e
+            logger.warning("Ollama failed: %s — falling back to Gemini", e)
 
-    logger.info("Routing to Gemini (gemini-2.5-flash)...")
-    raw = await gemini_generate(prompt)
-    data = parse_diagram_json(raw)
-    return DiagramResponse(**data)
+    try:
+        logger.info("Routing to Gemini (gemini-2.5-flash)...")
+        raw = await gemini_generate(prompt)
+        data = parse_diagram_json(raw)
+        return DiagramResponse(**data)
+    except RuntimeError as e:
+        # Gemini not configured — surface a clear message
+        if ollama_error:
+            raise RuntimeError(
+                f"Both models failed. Ollama: {ollama_error}. Gemini: {e}"
+            ) from e
+        raise

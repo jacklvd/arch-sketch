@@ -30,37 +30,84 @@ arch-sketch/
 │   ├── models/                  # Pydantic request & diagram models
 │   ├── services/                # OllamaClient, GeminiClient, ModelRouter, JSON repair
 │   └── prompts/                 # Prompt templates per diagram type
-└── client/
-    ├── src/
-    │   ├── api/                 # Axios API client
-    │   ├── components/          # InputForm, DiagramCanvas
-    │   ├── nodes/               # Custom React Flow nodes
-    │   ├── lib/                 # iconRegistry, diagramMapper, layoutEngine
-    │   ├── store/               # Zustand store
-    │   └── types/               # TypeScript types matching JSON contract
-    └── public/                  # Static assets & icons
+├── client/
+│   ├── src/
+│   │   ├── api/                 # Axios API client
+│   │   ├── components/          # InputForm, DiagramCanvas, DiagramTabs
+│   │   ├── nodes/               # Custom React Flow nodes
+│   │   ├── edges/               # Custom React Flow edges
+│   │   ├── lib/                 # iconRegistry, diagramMapper, layoutEngine
+│   │   ├── store/               # Zustand store
+│   │   └── types/               # TypeScript types matching JSON contract
+│   └── public/                  # Static assets & icons
+├── docker-compose.yml
+└── README.md
 ```
 
-## Getting Started
+## Running the App
 
-### Prerequisites
+### Option A — Docker (recommended)
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+# Clone and enter the project
+git clone <repo-url> arch-sketch
+cd arch-sketch
+
+# (Optional) set your Gemini API key for the cloud fallback
+export GEMINI_API_KEY=your_key_here
+
+# Build and start all three services (client, backend, ollama)
+docker compose up --build
+
+# First run only: pull the AI model into the Ollama container
+docker compose exec ollama ollama pull gemma4:e4b
+```
+
+| Service | URL |
+| --- | --- |
+| Frontend | <http://localhost:3000> |
+| Backend API | <http://localhost:8000> |
+| Ollama | <http://localhost:11434> |
+
+To stop: `docker compose down`. Model data is persisted in the `ollama_data` Docker volume.
+
+---
+
+### Option B — Local Development
+
+#### Prerequisites
 
 - Python 3.14+, [Poetry](https://python-poetry.org/)
 - Node.js 18+, Yarn
-- [Ollama](https://ollama.com/) with `gemma4:e4b` pulled
-- A [Google Gemini API key](https://aistudio.google.com/) (for fallback)
+- [Ollama](https://ollama.com/) installed and running
 
-### Backend
+#### 1. Ollama
+
+```bash
+ollama pull gemma4:e4b
+# Ollama starts automatically on most installs; if not:
+ollama serve
+```
+
+#### 2. Backend
 
 ```bash
 cd backend
-cp .env.example .env        # add your GEMINI_API_KEY
+
+# Install dependencies
 poetry install
+
+# Add your Gemini API key (used as fallback if Ollama is unavailable)
+echo "GEMINI_API_KEY=your_key_here" > .env
+
+# Start the server
 source venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
 
-### Frontend
+#### 3. Frontend
 
 ```bash
 cd client
@@ -68,30 +115,33 @@ yarn install
 yarn dev
 ```
 
-### Ollama
-
-Ollama runs automatically in the background on most installs. If not:
-
-```bash
-ollama pull gemma4:e4b
-ollama serve
-```
-
 The app will be at **<http://localhost:5173>**.
+
+---
 
 ## Diagram Types
 
 | Type | Description |
 | --- | --- |
 | **High-Level Architecture** | Services, components, load balancers, databases, and their connections |
-| **Database Schema** | Tables, columns, PKs/FKs, and relationships |
+| **Database Schema** | Tables, columns, PKs/FKs, and relationships with cardinality |
 | **API Design** | Services with endpoints, HTTP methods, and inter-service calls |
-| **Low-Level Design** | Internal layers — controllers, services, repositories, and design patterns |
+| **Low-Level Design** | Internal layers — controllers, services, repositories, domain classes, and design patterns |
+
+## Features
+
+- **Tab switching** — generate all four diagram types and switch between them without losing any
+- **Regenerate** — re-run the last generation for the active diagram with one click
+- **Export PNG** — download the current diagram as a high-resolution PNG
+- **Ollama status** — live indicator in the sidebar shows whether the local model is reachable
 
 ## Model Routing
-
-The backend scores request complexity and routes accordingly:
 
 1. **Ollama** (`gemma4:e4b`) — tried first; fast, local, private
 2. **JSON repair** — strips markdown fences, fixes trailing commas, validates schema
 3. **Gemini** (`gemini-2.5-flash`) — fallback if Ollama is unavailable or produces invalid output
+
+## Demo
+![high-level-design](assets/high-level-design.png)
+![database-design](assets/database-design.png)
+![low-level-design](assets/low-level-design.png)
