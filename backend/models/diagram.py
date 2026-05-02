@@ -28,10 +28,27 @@ class ApiEndpoint(BaseModel):
     response: str
 
 
+class ClassAttribute(BaseModel):
+    visibility: str = "+"
+    name: str
+    type: str
+
+
+class ClassMethod(BaseModel):
+    visibility: str = "+"
+    name: str
+    params: Optional[str] = None
+    returnType: Optional[str] = None
+
+
 class NodeMetadata(BaseModel):
     tech: Optional[list[str]] = None
     columns: Optional[list[DbColumn]] = None
     endpoints: Optional[list[ApiEndpoint]] = None
+    attributes: Optional[list[ClassAttribute]] = None
+    methods: Optional[list[ClassMethod]] = None
+    pattern: Optional[str] = None
+    stereotype: Optional[str] = None
 
 
 class DiagramNode(BaseModel):

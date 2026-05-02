@@ -111,9 +111,15 @@ export const GROUP_COLORS: Record<string, string> = {
   user:       '#06b6d4',
   order:      '#f59e0b',
   catalog:    '#8b5cf6',
-  api_layer:  '#3b82f6',
-  business:   '#10b981',
-  data_layer: '#8b5cf6',
+  api_layer:      '#3b82f6',
+  business:       '#10b981',
+  data_layer:     '#8b5cf6',
+  presentation:   '#3b82f6',
+  application:    '#10b981',
+  domain:         '#6366f1',
+  infrastructure: '#f59e0b',
+  data_access:    '#8b5cf6',
+  integration:    '#ef4444',
 }
 
 export function getGroupColor(group?: string): string {

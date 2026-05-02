@@ -18,10 +18,27 @@ export interface ApiEndpoint {
   response: string
 }
 
+export interface ClassAttribute {
+  visibility: '+' | '-' | '#'
+  name: string
+  type: string
+}
+
+export interface ClassMethod {
+  visibility: '+' | '-' | '#'
+  name: string
+  params?: string
+  returnType?: string
+}
+
 export interface NodeMetadata {
   tech?: string[]
   columns?: DbColumn[]
   endpoints?: ApiEndpoint[]
+  attributes?: ClassAttribute[]
+  methods?: ClassMethod[]
+  pattern?: string
+  stereotype?: string
 }
 
 export interface DiagramNode {

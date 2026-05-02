@@ -13,18 +13,26 @@ import '@xyflow/react/dist/style.css'
 import { ArchitectureNode } from '../nodes/ArchitectureNode'
 import { TableNode } from '../nodes/TableNode'
 import { ServiceNode } from '../nodes/ServiceNode'
+import { ClientNode } from '../nodes/ClientNode'
 import { GroupNode } from '../nodes/GroupNode'
+import { ClassNode } from '../nodes/ClassNode'
+import { ComponentNode } from '../nodes/ComponentNode'
 import { FKEdge } from '../edges/FKEdge'
+import { ApiEdge } from '../edges/ApiEdge'
 
 const nodeTypes = {
   architectureNode: ArchitectureNode,
   tableNode: TableNode,
   serviceNode: ServiceNode,
+  clientNode: ClientNode,
   groupNode: GroupNode,
+  classNode: ClassNode,
+  componentNode: ComponentNode,
 }
 
 const edgeTypes = {
   fkEdge: FKEdge,
+  apiEdge: ApiEdge,
 }
 
 interface DiagramCanvasProps {

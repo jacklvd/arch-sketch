@@ -229,24 +229,24 @@ The AI model prompt includes a list of available icon keys so it picks from the 
 
 #### Custom React Flow Nodes
 
-- [ ] `ArchitectureNode` — icon + label + optional tech badges, colored border by group
-- [ ] `GroupNode` — dashed/solid bounding box around child nodes (like "Fargate CI/CD Stack")
-- [ ] Custom edge styles — solid, dashed, animated, with labels
+- [X] `ArchitectureNode` — icon + label + optional tech badges, colored border by group
+- [X] `GroupNode` — dashed/solid bounding box around child nodes (like "Fargate CI/CD Stack")
+- [X] Custom edge styles — solid, dashed, animated, with labels
 
 #### Prompt Engineering
 
-- [ ] Craft the `high_level` prompt template:
+- [X] Craft the `high_level` prompt template:
   - System prompt explaining the role, available icons, expected JSON
   - Few-shot examples based on your reference image 1 (the AWS architecture)
   - Instructions for grouping, positioning, and edge labeling
-- [ ] Test with various system design scenarios (e-commerce, chat app, video platform)
-- [ ] Tune for both Gemma 4 and Gemini — may need different prompt styles per model
+- [X] Test with various system design scenarios (e-commerce, chat app, video platform)
+- [X] Tune for both Gemma 4 and Gemini — may need different prompt styles per model
 
 #### Layout
 
-- [ ] Implement auto-layout using `dagre` or `elkjs` (React Flow compatible) so nodes aren't overlapping
-- [ ] Allow the AI's suggested positions as hints, but run layout algorithm for final placement
-- [ ] Make nodes draggable for manual adjustment after generation
+- [X] Implement auto-layout using `dagre` or `elkjs` (React Flow compatible) so nodes aren't overlapping
+- [X] Allow the AI's suggested positions as hints, but run layout algorithm for final placement
+- [X] Make nodes draggable for manual adjustment after generation
 
 ---
 
@@ -256,22 +256,22 @@ The AI model prompt includes a list of available icon keys so it picks from the 
 
 #### Custom Nodes
 
-- [ ] `TableNode` — header bar (table name) + columns list with name/type/PK indicator
-- [ ] Style: dark header, light body, clean typography
-- [ ] FK edges — crow's foot notation or simple line with cardinality labels
+- [X] `TableNode` — header bar (table name) + columns list with name/type/PK indicator
+- [X] Style: dark header, light body, clean typography
+- [X] FK edges — crow's foot notation or simple line with cardinality labels
 
 #### Prompt Engineering
 
-- [ ] Craft `database` prompt template:
+- [X] Craft `database` prompt template:
   - Input: the user's design description + functional requirements
   - Output: tables with columns, types, PKs, FKs, and relationships
   - Few-shot example matching your reference image 3 schema style
-- [ ] Validate: every FK edge target must reference an existing table/column
+- [X] Validate: every FK edge target must reference an existing table/column
 
 #### Enhancements
 
-- [ ] Color-code tables by domain (user-related, order-related, reference data)
-- [ ] Show index indicators on columns
+- [X] Color-code tables by domain (user-related, order-related, reference data)
+- [X] Show index indicators on columns
 
 ---
 

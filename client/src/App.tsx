@@ -29,13 +29,13 @@ export default function App() {
       const diagram = await generateDiagram(req)
       setDiagram(req.diagram_type, diagram)
       const { nodes: rfNodes, edges: rfEdges } = mapToReactFlow(diagram)
-      const isDatabase = diagram.diagramType === 'database'
+      const dt = diagram.diagramType
       const layoutedNodes = applyLayoutWithGroups(rfNodes, rfEdges, {
-        direction: isDatabase ? 'TB' : 'LR',
-        nodeWidth: isDatabase ? 220 : 160,
-        nodeHeight: isDatabase ? 200 : 90,
-        nodeSep: isDatabase ? 60 : 80,
-        rankSep: isDatabase ? 100 : 140,
+        direction: dt === 'database' || dt === 'low_level' ? 'TB' : 'LR',
+        nodeWidth:  dt === 'database' ? 220 : dt === 'api' ? 240 : dt === 'low_level' ? 220 : 160,
+        nodeHeight: dt === 'database' ? 200 : dt === 'api' ? 160 : dt === 'low_level' ? 200 : 90,
+        nodeSep:    dt === 'database' ? 60  : dt === 'api' ? 60  : dt === 'low_level' ? 60  : 80,
+        rankSep:    dt === 'database' ? 100 : dt === 'api' ? 180 : dt === 'low_level' ? 120 : 140,
       })
       setNodes(layoutedNodes)
       setEdges(rfEdges)
