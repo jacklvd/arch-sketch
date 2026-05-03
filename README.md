@@ -4,7 +4,7 @@ AI-powered system design diagram generator. Describe your system and get interac
 
 ## How It Works
 
-Fill in your system requirements (quest, functional/non-functional requirements, design description), pick a diagram type, and click **Generate Diagram**. The backend routes the request to a local Ollama model (`gemma4:e4b`) first, falling back to Gemini (`gemini-2.5-flash`) for complex cases or if Ollama is unavailable.
+Fill in your system requirements (quest, functional/non-functional requirements, design description), pick a diagram type, and click **Generate Diagram**. The backend routes the request to a local Ollama model (`gemma4:e2b`) first, falling back to Gemini (`gemini-2.5-flash`) for complex cases or if Ollama is unavailable.
 
 ## Stack
 
@@ -16,7 +16,7 @@ Fill in your system requirements (quest, functional/non-functional requirements,
 | Auto-layout | dagre |
 | State | Zustand |
 | Backend | FastAPI (Python 3.14) |
-| Local AI | Ollama — `gemma4:e4b` |
+| Local AI | Ollama — `gemma4:e2b` |
 | Cloud AI | Google Gemini — `gemini-2.5-flash` |
 | Validation | Pydantic v2 |
 
@@ -62,7 +62,7 @@ export GEMINI_API_KEY=your_key_here
 docker compose up --build
 
 # First run only: pull the AI model into the Ollama container
-docker compose exec ollama ollama pull gemma4:e4b
+docker compose exec ollama ollama pull gemma4:e2b
 ```
 
 | Service | URL |
@@ -86,7 +86,7 @@ To stop: `docker compose down`. Model data is persisted in the `ollama_data` Doc
 #### 1. Ollama
 
 ```bash
-ollama pull gemma4:e4b
+ollama pull gemma4:e2b
 # Ollama starts automatically on most installs; if not:
 ollama serve
 ```
@@ -137,9 +137,9 @@ The app will be at **<http://localhost:5173>**.
 
 ## Model Routing
 
-1. **Ollama** (`gemma4:e4b`) — tried first; fast, local, private
+1. **Gemini** (`gemini-2.5-flash`) — tried first; best accuracy and detail for complex system designs
 2. **JSON repair** — strips markdown fences, fixes trailing commas, validates schema
-3. **Gemini** (`gemini-2.5-flash`) — fallback if Ollama is unavailable or produces invalid output
+3. **Ollama** (`gemma4:e2b`) — local fallback if Gemini is unavailable or API key not set
 
 ## Demo
 ![high-level-design](assets/high-level-design.png)

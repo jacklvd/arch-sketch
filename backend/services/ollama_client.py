@@ -1,6 +1,6 @@
 import ollama
 
-DEFAULT_MODEL = "gemma4:e4b"
+DEFAULT_MODEL = "gemma4:e2b"
 
 
 async def generate(prompt: str, model: str = DEFAULT_MODEL) -> str:

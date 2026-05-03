@@ -4,6 +4,16 @@ const AWS_SVC = import.meta.glob<string>(
   { eager: true, query: '?url', import: 'default' }
 )
 
+const AZURE_SVC = import.meta.glob<string>(
+  '../assets/azure-icons/Icons/**/*.svg',
+  { eager: true, query: '?url', import: 'default' }
+)
+
+const GCP_SVC = import.meta.glob<string>(
+  '../assets/gcp-icons/*/SVG/*.svg',
+  { eager: true, query: '?url', import: 'default' }
+)
+
 const OTHERS = import.meta.glob<string>(
   '../assets/others/**/*.{svg,png}',
   { eager: true, query: '?url', import: 'default' }
@@ -19,67 +29,112 @@ export interface IconResult {
   emoji: string
 }
 
-// [file-pattern-to-search, emoji-fallback]
-const ICON_MAP: Record<string, [string, string]> = {
-  aws_api_gateway:  ['Amazon-API-Gateway_48',                 '⇄'],
-  aws_lambda:       ['AWS-Lambda_48.svg',                     'λ'],
-  aws_ec2:          ['Amazon-EC2_48.svg',                     '🖥'],
-  aws_fargate:      ['AWS-Fargate_48.svg',                    '🐳'],
-  aws_ecs:          ['Amazon-ECS-Anywhere_48.svg',            '📦'],
-  aws_s3:           ['Amazon-S3-on-Outposts_48.svg',          '🪣'],
-  aws_dynamodb:     ['Amazon-DynamoDB_48.svg',                '⬡'],
-  aws_rds:          ['Amazon-Aurora_48.svg',                  '🗄'],
-  aws_aurora:       ['Amazon-Aurora_48.svg',                  '🗄'],
-  aws_elasticache:  ['Amazon-ElastiCache_48.svg',             '⚡'],
-  aws_sqs:          ['Amazon-Simple-Queue-Service_48.svg',    '📬'],
-  aws_sns:          ['Amazon-Simple-Notification-Service_48.svg', '📢'],
-  aws_cloudfront:   ['Amazon-CloudFront_48',                  '🌐'],
-  aws_route53:      ['Amazon-Route-53_48.svg',                '🔍'],
-  aws_elb:          ['Elastic-Load-Balancing_48.svg',         '⚖'],
-  aws_cloudwatch:   ['Amazon-CloudWatch_48',                  '👁'],
-  aws_cognito:      ['Amazon-Cognito_48',                     '🔑'],
-  aws_neptune:      ['Amazon-Neptune_48.svg',                 '⬡'],
-  aws_opensearch:   ['Amazon-OpenSearch-Service_48',          '🔍'],
-  kafka:            ['icons8-apache-kafka-48',                '📨'],
-  redis:            ['icons8-redis-48',                       '⚡'],
+// [file-pattern-to-search, emoji-fallback, glob-source]
+// glob-source: 'aws' | 'azure' | 'gcp' | 'others'
+type IconEntry = [string, string, 'aws' | 'azure' | 'gcp' | 'others']
+
+const ICON_MAP: Record<string, IconEntry> = {
+  // AWS
+  aws_api_gateway:  ['Amazon-API-Gateway_48',                    '⇄',  'aws'],
+  aws_lambda:       ['AWS-Lambda_48.svg',                        'λ',   'aws'],
+  aws_ec2:          ['Amazon-EC2_48.svg',                        '🖥',  'aws'],
+  aws_fargate:      ['AWS-Fargate_48.svg',                       '🐳', 'aws'],
+  aws_ecs:          ['Amazon-ECS-Anywhere_48.svg',               '📦', 'aws'],
+  aws_s3:           ['Amazon-S3-on-Outposts_48.svg',             '🪣', 'aws'],
+  aws_dynamodb:     ['Amazon-DynamoDB_48.svg',                   '⬡',  'aws'],
+  aws_rds:          ['Amazon-Aurora_48.svg',                     '🗄', 'aws'],
+  aws_aurora:       ['Amazon-Aurora_48.svg',                     '🗄', 'aws'],
+  aws_elasticache:  ['Amazon-ElastiCache_48.svg',                '⚡', 'aws'],
+  aws_sqs:          ['Amazon-Simple-Queue-Service_48.svg',       '📬', 'aws'],
+  aws_sns:          ['Amazon-Simple-Notification-Service_48.svg','📢', 'aws'],
+  aws_cloudfront:   ['Amazon-CloudFront_48',                     '🌐', 'aws'],
+  aws_route53:      ['Amazon-Route-53_48.svg',                   '🔍', 'aws'],
+  aws_elb:          ['Elastic-Load-Balancing_48.svg',            '⚖',  'aws'],
+  aws_cloudwatch:   ['Amazon-CloudWatch_48',                     '👁',  'aws'],
+  aws_cognito:      ['Amazon-Cognito_48',                        '🔑', 'aws'],
+  aws_neptune:      ['Amazon-Neptune_48.svg',                    '⬡',  'aws'],
+  aws_opensearch:   ['Amazon-OpenSearch-Service_48',             '🔍', 'aws'],
+  // GCP
+  gcp_cloud_run:        ['CloudRun-512-color',        '☁',  'gcp'],
+  gcp_gke:              ['GKE-512-color',              '☸',  'gcp'],
+  gcp_bigquery:         ['BigQuery-512-color',         '⬡',  'gcp'],
+  gcp_spanner:          ['CloudSpanner-512-color',     '🗄', 'gcp'],
+  gcp_cloud_storage:    ['Cloud_Storage-512-color',    '🪣', 'gcp'],
+  gcp_cloud_sql:        ['CloudSQL-512-color',         '🗄', 'gcp'],
+  gcp_vertex_ai:        ['VertexAI-512-color',         '🤖', 'gcp'],
+  gcp_compute_engine:   ['ComputeEngine-512-color',    '🖥',  'gcp'],
+  gcp_apigee:           ['Apigee-512-color',           '⇄',  'gcp'],
+  gcp_alloydb:          ['AlloyDB-512-color',          '🗄', 'gcp'],
+  gcp_anthos:           ['Anthos-512-color',           '☸',  'gcp'],
+  // Azure
+  azure_aks:             ['Kubernetes-Services.svg',          '☸',  'azure'],
+  azure_functions:       ['icon-service-Function-Apps.svg',   'λ',   'azure'],
+  azure_cosmos_db:       ['Azure-Cosmos-DB.svg',              '⬡',  'azure'],
+  azure_blob_storage:    ['service-Storage-Accounts.svg',     '🪣', 'azure'],
+  azure_service_bus:     ['Azure-Service-Bus.svg',            '📨', 'azure'],
+  azure_redis_cache:     ['Cache-Redis.svg',                  '⚡', 'azure'],
+  azure_api_management:  ['API-Management-Services.svg',      '⇄',  'azure'],
+  azure_key_vault:       ['Key-Vaults.svg',                   '🔑', 'azure'],
+  azure_app_service:     ['icon-service-App-Services.svg',    '🌐', 'azure'],
+  azure_monitor:         ['00001-icon-service-Monitor.svg',   '👁',  'azure'],
+  azure_event_hub:       ['Event-Hubs.svg',                   '📨', 'azure'],
+  azure_cdn:             ['CDN-Profiles.svg',                 '🌐', 'azure'],
+  azure_sql:             ['Azure-SQL.svg',                    '🗄', 'azure'],
+  // Others
+  kafka:  ['icons8-apache-kafka-48', '📨', 'others'],
+  redis:  ['icons8-redis-48',        '⚡', 'others'],
 }
 
 // Keys with no real icon asset — emoji only
 const EMOJI_ONLY: Record<string, string> = {
-  client:       '💻',
-  server:       '🖥',
-  database:     '🗄',
-  load_balancer:'⚖',
-  cache:        '⚡',
-  queue:        '📬',
-  microservice: '⚙',
-  mobile:       '📱',
-  browser:      '🌐',
-  cdn:          '🌍',
-  firewall:     '🔥',
-  nginx:        '⇄',
-  spring_boot:  '🌱',
-  postgres:     '🐘',
-  mysql:        '🐬',
-  mongodb:      '🍃',
-  elasticsearch:'🔍',
-  docker:       '🐳',
-  kubernetes:   '☸',
-  graphql:      '◈',
-  table:        '▦',
-  api_service:  '⬡',
-  unknown:      '□',
+  // Generic
+  client:              '💻',
+  server:              '🖥',
+  database:            '🗄',
+  load_balancer:       '⚖',
+  cache:               '⚡',
+  queue:               '📬',
+  microservice:        '⚙',
+  mobile:              '📱',
+  browser:             '🌐',
+  cdn:                 '🌍',
+  firewall:            '🔥',
+  nginx:               '⇄',
+  spring_boot:         '🌱',
+  postgres:            '🐘',
+  mysql:               '🐬',
+  mongodb:             '🍃',
+  elasticsearch:       '🔍',
+  docker:              '🐳',
+  kubernetes:          '☸',
+  graphql:             '◈',
+  table:               '▦',
+  api_service:         '⬡',
+  // GCP — no icon asset available
+  gcp_cloud_functions: 'λ',
+  gcp_firestore:       '🔥',
+  gcp_pub_sub:         '📨',
+  gcp_load_balancing:  '⚖',
+  gcp_cloud_armor:     '🛡',
+  gcp_cloud_cdn:       '🌐',
+  gcp_memorystore:     '⚡',
+  // Azure — no icon asset available
+  azure_load_balancer:    '⚖',
+  azure_active_directory: '🔑',
+  unknown:                '□',
 }
 
 const _cache = new Map<string, IconResult>()
+
+const GLOB_MAP = { aws: AWS_SVC, azure: AZURE_SVC, gcp: GCP_SVC, others: OTHERS }
 
 export function getIcon(key: string): IconResult {
   if (_cache.has(key)) return _cache.get(key)!
 
   const mapped = ICON_MAP[key]
   if (mapped) {
-    const [pattern, emoji] = mapped
-    const src = findUrl(AWS_SVC, pattern) ?? findUrl(OTHERS, pattern)
+    const [pattern, emoji, source] = mapped
+    const src = findUrl(GLOB_MAP[source], pattern)
     const result: IconResult = { src, emoji }
     _cache.set(key, result)
     return result
