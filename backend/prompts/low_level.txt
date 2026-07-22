@@ -23,14 +23,17 @@ Only use icon keys from this list:
 - Use TWO node types:
   - "type": "component_node" — for architectural layers: Controller, Service, Repository, EventPublisher, Gateway, Facade, Middleware, Validator, UseCase. Include "tech" array in metadata.
   - "type": "class_node" — for domain model classes. Include "attributes" and "methods" arrays in metadata.
-- Include 5–9 nodes total.
+- Include as many components and classes as the chosen service actually has — enough to show its real internal structure, no filler. A thin service may need ~5 nodes; a rich one may need 12+. Don't drop meaningful components to stay small, and don't invent ones the service wouldn't have.
 - Include design pattern annotations where applicable: set "pattern" in metadata (Observer, Factory, Singleton, Strategy, Facade, Repository, Builder, Decorator).
 - For class_node: include a "stereotype" in metadata if applicable ("<<interface>>", "<<abstract>>", "<<entity>>", "<<value object>>").
 - Edges describe data flow or method calls. Labels are concise: "save(order)", "OrderCreatedEvent", "createOrder(dto)", etc.
 - Use "solid" for direct calls, "dashed" for dependencies/interfaces, "animated" for async/event-driven.
 - Groups represent architectural layers: "Presentation", "Business Logic", "Domain Model", "Data Access", "Infrastructure".
-- Position top-to-bottom in layers: Presentation y≈50, Business Logic y≈200, Domain y≈350, Data Access y≈500, Infrastructure y≈650.
-- Spread nodes horizontally within each layer, 180–220px apart.
+- Node positions are auto-arranged by the app's layout engine, so the x/y you provide are ignored — set every position to {{"x":0,"y":0}} and spend your effort on the right components, layers, and call edges instead.
+
+## Grounding (avoid hallucinating components)
+- Every component and class must belong to the one service you're drilling into and reflect how such a service is really built. If a component isn't part of that service's real responsibility, leave it out.
+- Annotate a pattern/stereotype only where it genuinely applies — don't attach patterns for decoration.
 
 ## JSON Schema
 
