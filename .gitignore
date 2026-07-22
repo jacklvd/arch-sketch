@@ -26,6 +26,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Claude Code (worktrees, local settings, etc.)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

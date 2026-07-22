@@ -4,7 +4,7 @@ AI-powered system design diagram generator. Describe your system and get interac
 
 ## How It Works
 
-Fill in your system requirements (quest, functional/non-functional requirements, design description), pick a diagram type, and click **Generate Diagram**. The backend routes the request to a local Ollama model (`gemma4:e2b`) first, falling back to Gemini (`gemini-2.5-flash`) for complex cases or if Ollama is unavailable.
+Fill in your system requirements (quest, functional/non-functional requirements, design description), pick a diagram type, and click **Generate Diagram**. The backend routes the request to NVIDIA NIM's free cloud models (`z-ai/glm-5.2` + fallbacks) first, falling back to a local Ollama model (`gemma4:e2b`) if NVIDIA is unavailable or no API key is set.
 
 ## Stack
 
@@ -17,7 +17,7 @@ Fill in your system requirements (quest, functional/non-functional requirements,
 | State | Zustand |
 | Backend | FastAPI (Python 3.14) |
 | Local AI | Ollama — `gemma4:e2b` |
-| Cloud AI | Google Gemini — `gemini-2.5-flash` |
+| Cloud AI | NVIDIA NIM (free) — `mistral-small-4` → `glm-5.2` → `inkling` → `minimax-m2.7` |
 | Validation | Pydantic v2 |
 
 ## Project Structure
@@ -28,7 +28,7 @@ arch-sketch/
 │   ├── main.py                  # FastAPI entry point
 │   ├── api/routes/generate.py   # POST /api/generate
 │   ├── models/                  # Pydantic request & diagram models
-│   ├── services/                # OllamaClient, GeminiClient, ModelRouter, JSON repair
+│   ├── services/                # OllamaClient, NvidiaClient, ModelRouter, JSON repair
 │   └── prompts/                 # Prompt templates per diagram type
 ├── client/
 │   ├── src/
@@ -55,8 +55,8 @@ Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 git clone <repo-url> arch-sketch
 cd arch-sketch
 
-# (Optional) set your Gemini API key for the cloud fallback
-export GEMINI_API_KEY=your_key_here
+# Set your free NVIDIA API key (get one at build.nvidia.com) for the cloud provider
+export NVIDIA_API_KEY=nvapi-your_key_here
 
 # Build and start all three services (client, backend, ollama)
 docker compose up --build
@@ -79,7 +79,7 @@ To stop: `docker compose down`. Model data is persisted in the `ollama_data` Doc
 
 #### Prerequisites
 
-- Python 3.14+, [Poetry](https://python-poetry.org/)
+- Python 3.14+, [uv](https://docs.astral.sh/uv/)
 - Node.js 18+, Yarn
 - [Ollama](https://ollama.com/) installed and running
 
@@ -96,15 +96,14 @@ ollama serve
 ```bash
 cd backend
 
-# Install dependencies
-poetry install
+# Install dependencies (creates .venv from uv.lock)
+uv sync
 
-# Add your Gemini API key (used as fallback if Ollama is unavailable)
-echo "GEMINI_API_KEY=your_key_here" > .env
+# Add your free NVIDIA API key (get one at build.nvidia.com)
+echo "NVIDIA_API_KEY=nvapi-your_key_here" > .env
 
 # Start the server
-source venv/bin/activate
-uvicorn main:app --reload --port 8000
+uv run uvicorn main:app --reload --port 8000
 ```
 
 #### 3. Frontend
@@ -137,9 +136,13 @@ The app will be at **<http://localhost:5173>**.
 
 ## Model Routing
 
-1. **Gemini** (`gemini-2.5-flash`) — tried first; best accuracy and detail for complex system designs
+1. **NVIDIA NIM** — tried first; each model is attempted in order (fastest-first) until one returns valid JSON (free tier at [build.nvidia.com](https://build.nvidia.com)):
+   1. `mistralai/mistral-small-4-119b-2603` — primary, fastest (~12s)
+   2. `z-ai/glm-5.2` — ~33s, strongest JSON output
+   3. `thinkingmachines/inkling` — ~37s
+   4. `minimaxai/minimax-m2.7` — ~38s
 2. **JSON repair** — strips markdown fences, fixes trailing commas, validates schema
-3. **Ollama** (`gemma4:e2b`) — local fallback if Gemini is unavailable or API key not set
+3. **Ollama** (`gemma4:e2b`) — local fallback if all NVIDIA models fail or no API key is set
 
 ## Demo
 ![high-level-design](assets/high-level-design.png)
