@@ -4,7 +4,7 @@ AI-powered system design diagram generator. Describe your system and get interac
 
 ## How It Works
 
-Fill in your system requirements (quest, functional/non-functional requirements, design description), pick a diagram type, and click **Generate Diagram**. The backend routes the request to NVIDIA NIM's free cloud models (`z-ai/glm-5.2` + fallbacks) first, falling back to a local Ollama model (`gemma4:e2b`) if NVIDIA is unavailable or no API key is set.
+Fill in your system requirements (quest, functional/non-functional requirements, design description), pick a diagram type, and click **Generate Diagram**. The backend routes the request to NVIDIA NIM's free cloud models (`mistralai/mistral-small-4-119b-2603` first, then `glm-5.2` / `inkling` / `minimax-m2.7`), falling back to a local Ollama model (`gemma4:e2b`) if NVIDIA is unavailable or no API key is set.
 
 ## Stack
 
