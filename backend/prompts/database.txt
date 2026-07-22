@@ -16,13 +16,17 @@ Design Description:
 ## Rules
 - Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
 - Every node MUST have "type": "db_table".
-- Include 5-12 tables — cover all core entities implied by the requirements.
+- Include one table per core entity the requirements imply — as many as a real, normalized schema needs (a simple app may have ~5; a rich domain may have 15+). Include join tables for N:M relationships. Don't invent tables the requirements don't call for, and don't drop entities to stay small.
 - Each table must have at least one PK column and realistic columns with proper SQL types.
 - FK columns must have "fk": true and match the PK of the referenced table.
 - Edges represent relationships. Label must be cardinality: "1:N", "N:M", or "1:1".
 - Source of an edge is the "many" or "child" side, target is the "one" or "parent" side.
 - Color-code tables by domain using the "group" field (e.g. "user_domain", "order_domain", "catalog_domain").
-- Position tables to avoid overlap. Use a grid layout: increment x by 350, y by 280.
+- Table positions are auto-arranged by the app's layout engine, so the x/y you provide are ignored — set every position to {{"x":0,"y":0}} and spend your effort on correct tables, columns, and relationships instead.
+
+## Grounding (avoid hallucinating tables/columns)
+- Every table and column must map to a concrete need in the requirements above. If you can't name the requirement a table or column serves, leave it out.
+- Prefer standard, realistic columns for each entity; do not pad tables with speculative fields.
 
 ## JSON Schema
 

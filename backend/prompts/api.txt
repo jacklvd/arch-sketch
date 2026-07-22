@@ -21,13 +21,18 @@ Only use icon keys from this list:
 - Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
 - Include 1-2 client nodes (browser, mobile) with NO "type" field and group "clients".
 - Include 1 API gateway node with group "networking".
-- Include 4-8 backend service nodes with "type": "api_service", each having 3-5 endpoints.
+- Include one backend service node ("type": "api_service") per bounded capability the requirements imply — as many as the domain actually needs (a small API may have 3, a large one 10+). Each service lists its real endpoints (typically 3-6). Don't invent services or endpoints the requirements don't call for.
 - Edges flow left-to-right: clients → gateway → services (and between services for inter-service calls).
 - Edge labels must start with the HTTP method: "GET /path", "POST /path", "HTTPS", "gRPC", etc.
   This is required — the frontend uses the first word to color-code the edge.
 - Use "dashed" style for async or event-driven calls, "solid" for synchronous REST/gRPC.
 - Always include groups: "Clients", "Networking", "Backend Services".
-- Position in layers: clients x≈80, gateway x≈350, services x≈700 (spread vertically, 180px apart).
+- Node positions are auto-arranged by the app's layout engine, so the x/y you provide are ignored — set every position to {{"x":0,"y":0}} and spend your effort on the right services, endpoints, and edges instead.
+
+## Grounding (avoid hallucinating services)
+- Every service and endpoint must map to a concrete need in the requirements above. If you can't name the requirement it serves, leave it out.
+- Only use a cloud-vendor-specific icon when the requirements name that cloud or technology; otherwise use the generic equivalent (microservice, server, ...).
+- No duplicate services — split by capability (auth, orders, payments, ...), not arbitrarily.
 
 ## JSON Schema
 

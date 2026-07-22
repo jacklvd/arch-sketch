@@ -19,13 +19,18 @@ Only use icon keys from this list (use "unknown" if nothing fits):
 
 ## Rules
 - Return ONLY a valid JSON object. No markdown, no explanation, no code fences.
-- Use 8-14 nodes — enough to be meaningful, not so many it becomes unreadable.
+- Let the diagram size follow the actual system. Include exactly the components the requirements imply — no fewer, no more. A simple app may need ~6 nodes; a large distributed system may need 20+. Never pad to look impressive, and never compress a genuinely complex system to stay small.
 - Always include at least 2 groups. Every node should belong to a group.
-- Position nodes in logical left-to-right layers: clients → networking → backend services → data layer.
-  Use x values roughly: clients=100, networking=350, backend=600-700, data=950. Use y to spread vertically with 150px spacing.
 - Edge labels must describe the protocol or data flow (e.g. HTTPS, gRPC, SQL, WebSocket, Pub/Sub, Cache read).
 - Edge style: use "solid" for synchronous calls, "dashed" for async/event-driven, "animated" for streaming.
 - All node ids must be unique snake_case strings.
+- Node positions are auto-arranged by the app's layout engine, so the x/y you provide are ignored — set every position to {{"x":0,"y":0}} and spend your effort on the right components, groups, and edges instead.
+
+## Grounding (avoid hallucinating components)
+- Every node must map to a concrete need in the requirements above — a functional requirement, a non-functional requirement, or a component that need *standardly* implies (e.g. "low-latency reads" → a cache; "decouple services" → a queue). If you can't name the requirement a node serves, leave it out.
+- Only use a cloud-vendor-specific component/icon when the requirements name that cloud or technology; otherwise use the generic equivalent (database, cache, queue, load_balancer, cdn, ...).
+- No duplicate or decorative nodes — each component appears once.
+- If the system is genuinely large, keep it readable: represent a cluster or fleet as a single node rather than listing every instance.
 
 ## JSON Schema
 
