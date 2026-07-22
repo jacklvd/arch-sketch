@@ -4,12 +4,16 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    POETRY_VIRTUALENVS_CREATE=false
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    PATH="/app/.venv/bin:$PATH"
 
-RUN pip install --no-cache-dir poetry
+# uv binary from the official distroless image (pinned tag, no pip bootstrap).
+COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /uvx /bin/
 
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-interaction
+# Install deps first (cached until pyproject/lock change), then the app.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev
 
 COPY . .
 
