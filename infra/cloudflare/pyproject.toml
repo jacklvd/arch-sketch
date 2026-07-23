@@ -7,13 +7,13 @@ description = "Cloudflare Python Worker bundling the arch-sketch FastAPI backend
 # ≥3.10), so it runs unchanged at the edge. Bump when Pyodide ships 3.14.
 requires-python = ">=3.13"
 
-# Worker-only deps. Deliberately a DIFFERENT set from backend/pyproject.toml:
-#   - fastapi + httpx have Pyodide/PyEmscripten wheels and run at the edge.
-#   - ollama & openai are OMITTED on purpose — no edge wheels, and unreachable from
-#     the edge anyway. ollama is imported lazily in ollama_client.py so its absence
-#     just reports "offline"; openai was already dropped for a raw httpx call.
+# Worker-only deps. Deliberately minimal — NOT fastapi/pydantic. The edge uses a
+# hand-rolled handler (worker.py) instead of FastAPI, because loading the
+# fastapi+pydantic+starlette stack in Pyodide exceeds the free-tier runtime budget
+# (the isolate fails to initialise). httpx is the only real dependency; the Workers
+# SDK (WorkerEntrypoint, Response) comes from workers-py. ollama & openai are omitted
+# (no edge wheels, unreachable from the edge; ollama_client imports ollama lazily).
 dependencies = [
-    "fastapi",
     "httpx",
 ]
 

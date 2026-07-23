@@ -1,13 +1,13 @@
 # Backend source copied in by deploy-cloudflare.sh — backend/ is the source of truth.
-/main.py
-/api/
-/models/
 /services/
 /prompts/
 
-# Tooling artifacts
+# Build artifacts from pywrangler sync / uv (never committed, never uploaded to CF)
 /.venv/
-/node_modules/
+/.venv-workers/
+/python_modules/
+/pylock.toml
 /uv.lock
-/package-lock.json
+/requirements.txt
+/node_modules/
 .wrangler/

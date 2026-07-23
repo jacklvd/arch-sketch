@@ -1,7 +1,12 @@
 from pathlib import Path
-from models.diagram import DiagramType
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
+# The four templates. Kept as a bare set (not the pydantic DiagramType enum) so this
+# module stays import-light: the Cloudflare Worker reuses it without pulling in
+# pydantic, whose Pyodide footprint blows the free-tier startup budget. The container
+# still passes the DiagramType enum — build_prompt normalises either form.
+VALID_DIAGRAM_TYPES = {"high_level", "database", "api", "low_level"}
 
 ICON_KEYS = [
     # AWS
@@ -29,13 +34,16 @@ ICON_KEYS = [
 
 
 def build_prompt(
-    diagram_type: DiagramType,
+    diagram_type,  # DiagramType enum (container) or str (worker)
     quest: str,
     functional_reqs: str,
     non_functional_reqs: str,
     design_description: str,
 ) -> str:
-    template_path = PROMPTS_DIR / f"{diagram_type.value}.txt"
+    dt = getattr(diagram_type, "value", diagram_type)  # enum -> value; str -> str
+    if dt not in VALID_DIAGRAM_TYPES:
+        raise ValueError(f"unknown diagram_type: {dt!r}")
+    template_path = PROMPTS_DIR / f"{dt}.txt"
     template = template_path.read_text()
     return template.format(
         quest=quest,
