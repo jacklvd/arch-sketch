@@ -5,6 +5,10 @@ import { loadPromptDraft, savePromptDraft } from '../lib/promptPersistence'
 interface PromptComposerProps {
   onSubmit: (request: GenerateRequest) => void
   isLoading: boolean
+  /** Requirements of the system being revisited. App remounts this component
+   *  (keyed on the active system) so revisiting refills the form; when absent
+   *  the saved draft is restored instead. */
+  initialRequest?: GenerateRequest
 }
 
 const DIAGRAM_TYPES: { value: DiagramType; label: string; description: string }[] = [
@@ -26,7 +30,7 @@ const STARTER_EXAMPLES: { label: string; request: GenerateRequest }[] = [
     },
   },
   {
-    label: 'Commerce',
+    label: 'Commerce platform',
     request: {
       quest: 'Design a multi-region commerce platform',
       functional_reqs: 'Catalog, search, cart, checkout, inventory, orders, and notifications',
@@ -47,8 +51,8 @@ const STARTER_EXAMPLES: { label: string; request: GenerateRequest }[] = [
   },
 ]
 
-export function PromptComposer({ onSubmit, isLoading }: PromptComposerProps) {
-  const [form, setForm] = useState<GenerateRequest>(loadPromptDraft)
+export function PromptComposer({ onSubmit, isLoading, initialRequest }: PromptComposerProps) {
+  const [form, setForm] = useState<GenerateRequest>(() => initialRequest ?? loadPromptDraft())
   const [constraintsOpen, setConstraintsOpen] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const questRef = useRef<HTMLTextAreaElement>(null)

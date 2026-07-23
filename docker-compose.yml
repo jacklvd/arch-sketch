@@ -21,7 +21,9 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+    env_file:
+      - path: ./backend/.env
+        required: false
     depends_on:
       ollama:
         condition: service_healthy
