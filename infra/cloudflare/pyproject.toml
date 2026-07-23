@@ -1,0 +1,22 @@
+[project]
+name = "arch-sketch-worker"
+version = "0.1.0"
+description = "Cloudflare Python Worker bundling the arch-sketch FastAPI backend"
+requires-python = ">=3.13"
+
+# Worker-only deps. Deliberately a DIFFERENT set from backend/pyproject.toml:
+#   - fastapi + httpx have Pyodide/PyEmscripten wheels and run at the edge.
+#   - ollama & openai are OMITTED on purpose — no edge wheels, and unreachable from
+#     the edge anyway. ollama is imported lazily in ollama_client.py so its absence
+#     just reports "offline"; openai was already dropped for a raw httpx call.
+dependencies = [
+    "fastapi",
+    "httpx",
+]
+
+[dependency-groups]
+dev = [
+    "workers-py",
+]
+
+# No [build-system]: this is an application bundle, not a package.

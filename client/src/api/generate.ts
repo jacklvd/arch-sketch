@@ -1,7 +1,11 @@
 import type { DiagramData, GenerateRequest } from '../types/diagram'
 import { requestJson } from './request.ts'
 
-const API_BASE = 'http://localhost:8000/api'
+// Vite inlines this at build time, so the deployed bundle carries the Worker URL.
+// The optional chain matters: `import.meta.env` only exists under Vite, and the
+// node test runner imports this module directly. Default keeps `yarn dev` and
+// docker compose working with no .env at all.
+const API_BASE = import.meta.env?.VITE_API_BASE ?? 'http://localhost:8000/api'
 
 export async function generateDiagram(request: GenerateRequest): Promise<DiagramData> {
   return requestJson<DiagramData>(`${API_BASE}/generate`, {

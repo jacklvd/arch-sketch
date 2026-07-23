@@ -9,10 +9,11 @@ license = {text = "MIT"}
 requires-python = ">=3.14"
 dependencies = [
     "fastapi[standard]>=0.136.1,<0.137.0",
-    "ollama>=0.6.2,<0.7.0",
-    "openai>=1.0.0",
-    "python-dotenv>=1.0.0",
+    "httpx>=0.27",         # NVIDIA NIM calls (replaced the openai SDK; async-only for Workers parity)
+    "ollama>=0.6.2,<0.7.0", # local fallback only; imported lazily so the edge build can skip it
 ]
+# Removed: openai (nvidia_client now POSTs via httpx) and python-dotenv (unused —
+# docker-compose loads backend/.env directly via env_file).
 
 # No [build-system]: this is an application, not a package — uv installs the
 # dependencies without trying to build/install the project itself (the uv

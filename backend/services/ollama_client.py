@@ -1,6 +1,10 @@
-import ollama
-
 DEFAULT_MODEL = "gemma4:e2b"
+
+# dev-note: `ollama` is imported inside the functions, not at module scope. The
+# Cloudflare Worker bundle does not ship it (no Emscripten wheel, and a 7GB local
+# model is unreachable from the edge anyway), so a top-level import would break
+# module_router's import chain on Workers. is_available() catches the ImportError
+# and reports offline, which is exactly the "cloud only" state the UI already renders.
 
 # Headroom, not a bugfix. Ollama defaults to 4096 and the diagram prompt alone is
 # ~1800-2100 tokens, leaving ~2000 for a 20+ node diagram (~1400 measured) — tight
@@ -13,6 +17,8 @@ _NUM_CTX = 8192
 
 
 async def generate(prompt: str, model: str = DEFAULT_MODEL) -> str:
+    import ollama
+
     client = ollama.AsyncClient()
     response = await client.generate(
         model=model,
@@ -25,6 +31,8 @@ async def generate(prompt: str, model: str = DEFAULT_MODEL) -> str:
 
 async def is_available() -> bool:
     try:
+        import ollama
+
         client = ollama.AsyncClient()
         await client.list()
         return True
