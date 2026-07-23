@@ -1,18 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  Panel,
   useNodesState,
   useEdgesState,
-  useReactFlow,
   getNodesBounds,
   getViewportForBounds,
   BackgroundVariant,
 } from '@xyflow/react'
-import type { Node, Edge } from '@xyflow/react'
+import type { Node, Edge, ReactFlowInstance } from '@xyflow/react'
 import { toPng } from 'html-to-image'
 import '@xyflow/react/dist/style.css'
 import { ArchitectureNode } from '../nodes/ArchitectureNode'
@@ -46,14 +44,14 @@ interface DiagramCanvasProps {
   title?: string
 }
 
-function ExportPanel({ title }: { title: string }) {
-  const { getNodes } = useReactFlow()
-  const [exporting, setExporting] = useState(false)
+export interface DiagramCanvasHandle {
+  fit: () => void
+  exportPng: () => Promise<void>
+}
 
-  const handleExport = async () => {
-    const nodes = getNodes()
+async function exportDiagram(instance: ReactFlowInstance | null, title: string) {
+    const nodes = instance?.getNodes() ?? []
     if (!nodes.length) return
-    setExporting(true)
 
     const bounds = getNodesBounds(nodes)
     const W = 2400
@@ -61,11 +59,10 @@ function ExportPanel({ title }: { title: string }) {
     const viewport = getViewportForBounds(bounds, W, H, 0.4, 2, 0.12)
 
     const el = document.querySelector('.react-flow__viewport') as HTMLElement
-    if (!el) { setExporting(false); return }
+    if (!el) return
 
-    try {
-      const dataUrl = await toPng(el, {
-        backgroundColor: '#f9fafb',
+    const dataUrl = await toPng(el, {
+        backgroundColor: '#f7f9fc',
         width: W,
         height: H,
         style: {
@@ -78,43 +75,21 @@ function ExportPanel({ title }: { title: string }) {
       a.href = dataUrl
       a.download = `${(title || 'diagram').replace(/\s+/g, '-').toLowerCase()}.png`
       a.click()
-    } finally {
-      setExporting(false)
-    }
-  }
-
-  return (
-    <Panel position="top-right">
-      <button
-        onClick={handleExport}
-        disabled={exporting}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 shadow-sm text-xs font-medium text-gray-600 hover:text-gray-800 hover:border-gray-300 transition-all disabled:opacity-50"
-      >
-        {exporting ? (
-          <>
-            <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Exporting…
-          </>
-        ) : (
-          <>
-            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M8 2v8M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Export PNG
-          </>
-        )}
-      </button>
-    </Panel>
-  )
 }
 
-export function DiagramCanvas({ nodes: propNodes, edges: propEdges, title = '' }: DiagramCanvasProps) {
+export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>(function DiagramCanvas(
+  { nodes: propNodes, edges: propEdges, title = '' },
+  ref,
+) {
   const [nodes, setNodes, onNodesChange] = useNodesState(propNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(propEdges)
+  const instanceRef = useRef<ReactFlowInstance | null>(null)
   const prevKeyRef = useRef(JSON.stringify(propNodes.map((n) => n.id)))
+
+  useImperativeHandle(ref, () => ({
+    fit: () => instanceRef.current?.fitView({ padding: 0.2, minZoom: 0.35, maxZoom: 1.1, duration: 240 }),
+    exportPng: () => exportDiagram(instanceRef.current, title),
+  }), [title])
 
   useEffect(() => {
     const key = JSON.stringify(propNodes.map((n) => n.id))
@@ -125,6 +100,31 @@ export function DiagramCanvas({ nodes: propNodes, edges: propEdges, title = '' }
     }
   }, [propNodes, propEdges, setNodes, setEdges])
 
+  const focusReadableRegion = (instance: ReactFlowInstance) => {
+    const regularNodes = propNodes.filter((node) => node.type !== 'groupNode')
+    const anchor = regularNodes[0]
+    if (!anchor) return
+    window.setTimeout(() => {
+      const currentZoom = instance.getZoom()
+      const isMobile = window.matchMedia('(max-width: 767px)').matches
+      if (!isMobile && currentZoom >= 0.6) return
+      const width = anchor.width ?? Number(anchor.style?.width ?? 168)
+      const height = anchor.height ?? Number(anchor.style?.height ?? 96)
+      const neighbor = regularNodes[1]
+      const neighborWidth = neighbor?.width ?? Number(neighbor?.style?.width ?? 168)
+      const neighborHeight = neighbor?.height ?? Number(neighbor?.style?.height ?? 96)
+      const anchorCenter = { x: anchor.position.x + width / 2, y: anchor.position.y + height / 2 }
+      const neighborCenter = neighbor
+        ? { x: neighbor.position.x + neighborWidth / 2, y: neighbor.position.y + neighborHeight / 2 }
+        : anchorCenter
+      void instance.setCenter(
+        isMobile ? (anchorCenter.x + neighborCenter.x) / 2 : anchorCenter.x,
+        isMobile ? (anchorCenter.y + neighborCenter.y) / 2 : anchorCenter.y,
+        { zoom: isMobile ? 0.75 : 0.65, duration: 280 },
+      )
+    }, 120)
+  }
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -133,20 +133,24 @@ export function DiagramCanvas({ nodes: propNodes, edges: propEdges, title = '' }
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
+      onInit={(instance) => {
+        instanceRef.current = instance
+        focusReadableRegion(instance)
+      }}
       fitView
-      fitViewOptions={{ padding: 0.15 }}
-      minZoom={0.1}
+      fitViewOptions={{ padding: 0.2, minZoom: 0.35, maxZoom: 1.1 }}
+      minZoom={0.35}
       maxZoom={2.5}
       proOptions={{ hideAttribution: true }}
     >
-      <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
+      <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="#dce4ef" />
       <Controls showInteractive={false} />
       <MiniMap
+        className="hidden md:block"
         nodeColor={(n) => (n.data as { color?: string }).color ?? '#6b7280'}
         maskColor="rgba(255,255,255,0.7)"
         style={{ border: '1px solid #e5e7eb', borderRadius: 8 }}
       />
-      <ExportPanel title={title} />
     </ReactFlow>
   )
-}
+})

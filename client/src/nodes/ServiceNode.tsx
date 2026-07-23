@@ -30,13 +30,13 @@ export function ServiceNode({ data }: { data: ServiceNodeData }) {
 
   return (
     <div
-      className="rounded-xl border-2 bg-white shadow-sm overflow-hidden min-w-52 max-w-64 select-none"
+      className="h-full w-full rounded-xl border bg-white shadow-sm overflow-hidden select-none"
       style={{ borderColor: data.color }}
     >
       <Handle type="target" position={Position.Left}   style={handleStyle} id="left-t" />
       <Handle type="target" position={Position.Top}    style={handleStyle} id="top-t" />
       <Handle type="source" position={Position.Right}  style={handleStyle} id="right-s" />
-      <Handle type="source" position={Position.Bottom} style={handleStyle} id="bot-s" />
+      <Handle type="source" position={Position.Bottom} style={handleStyle} id="bottom-s" />
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100">
