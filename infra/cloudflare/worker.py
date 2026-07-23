@@ -18,20 +18,18 @@ from urllib.parse import urlparse
 from workers import WorkerEntrypoint, Response
 
 # Bindings the backend reads through os.getenv. On Workers they arrive on `env`, not
-# in os.environ, so bridge them once before nvidia_client / CORS read them.
+# in os.environ, so copy them across before nvidia_client / CORS read them. Done every
+# request (four assignments, negligible) rather than once behind a module flag — env is
+# the source of truth, and a per-request copy can never serve stale values from a warm
+# isolate.
 _ENV_KEYS = ("NVIDIA_API_KEY", "ALLOWED_ORIGINS", "NVIDIA_MAX_MODELS", "NVIDIA_TIMEOUT_S")
-_bridged = False
 
 
 def _bridge_env(env):
-    global _bridged
-    if _bridged:
-        return
     for key in _ENV_KEYS:
         value = getattr(env, key, None)
         if value is not None:
             os.environ[key] = str(value)
-    _bridged = True
 
 
 def _cors_headers(origin: str | None) -> dict:

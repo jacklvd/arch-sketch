@@ -9,10 +9,6 @@ What is actually being protected is NVIDIA quota, not Cloudflare's 100k requests
 metering. The static client is served from Vercel and never touches this Worker.
 """
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 # Must match the `ratelimits[].name` in wrangler.jsonc.
 BINDING = "GENERATE_LIMIT"
 
