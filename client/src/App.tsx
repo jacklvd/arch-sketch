@@ -6,9 +6,11 @@ import { EmptyCanvasState } from './components/EmptyCanvasState'
 import { PromptComposer, STARTER_EXAMPLES } from './components/PromptComposer'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import { WorkspaceToolbar } from './components/WorkspaceToolbar'
+import { SystemHistory } from './components/SystemHistory'
 import { mapToReactFlow } from './lib/diagramMapper'
+import { DIAGRAM_TYPES } from './lib/diagramPersistence'
 import { applyLayoutWithGroups } from './lib/layoutEngine'
-import { useDiagramStore } from './store/diagramStore'
+import { activeDiagrams, activeSystem, useDiagramStore } from './store/diagramStore'
 import type { DiagramData, DiagramType, GenerateRequest } from './types/diagram'
 
 function getLayoutOptions(diagramType: DiagramType) {
@@ -33,27 +35,24 @@ function getViewQuery(): DiagramType | null {
 export default function App() {
   const {
     nodes, edges, isLoading, error,
-    activeDiagramType, diagrams, diagramKey,
-    lastRequests,
+    activeDiagramType, diagramKey,
+    systems, activeSignature,
     setLoading, setError, setDiagram, setNodes, setEdges,
-    setLastRequest, bumpKey, setActiveDiagramType,
+    startSystem, selectSystem, bumpKey, setActiveDiagramType,
   } = useDiagramStore()
+  const diagrams = useDiagramStore(activeDiagrams)
+  const currentSystem = useDiagramStore(activeSystem)
   const [providerStatus, setProviderStatus] = useState<'online' | 'offline' | 'unknown'>('unknown')
   const [promptOpen, setPromptOpen] = useState(false)
+  const [railTab, setRailTab] = useState<'describe' | 'history'>('describe')
+  // Rotate which starter the empty state offers so a fresh workspace does not
+  // always pitch the same system. Picked once per mount, never per render.
+  const [starterExample] = useState(() => STARTER_EXAMPLES[Math.floor(Math.random() * STARTER_EXAMPLES.length)])
   const canvasRef = useRef<DiagramCanvasHandle>(null)
 
   useEffect(() => {
     checkOllamaHealth().then((result) => setProviderStatus(result.status))
   }, [])
-
-  useEffect(() => {
-    const requestedView = getViewQuery()
-    if (requestedView && requestedView !== activeDiagramType) {
-      setActiveDiagramType(requestedView)
-      setNodes([])
-      setEdges([])
-    }
-  }, [activeDiagramType, setActiveDiagramType, setEdges, setNodes])
 
   const renderDiagram = useCallback(async (diagram: DiagramData) => {
     const mapped = mapToReactFlow(diagram)
@@ -66,8 +65,20 @@ export default function App() {
     setEdges(layout.edges)
   }, [setEdges, setNodes])
 
+  // Mount only: pick the view from ?view= and repaint it from the session cache
+  // if it survived a refresh. Every later switch renders via handleSwitchView.
+  const bootstrapped = useRef(false)
+  useEffect(() => {
+    if (bootstrapped.current) return
+    bootstrapped.current = true
+    const view = getViewQuery() ?? activeDiagramType
+    if (view !== activeDiagramType) setActiveDiagramType(view)
+    const cached = diagrams[view]
+    if (cached) void renderDiagram(cached)
+  }, [activeDiagramType, diagrams, renderDiagram, setActiveDiagramType])
+
   const handleGenerate = async (request: GenerateRequest) => {
-    setLastRequest(request.diagram_type, request)
+    startSystem(request)
     setLoading(true)
     setError(null)
     try {
@@ -96,6 +107,27 @@ export default function App() {
     void renderDiagram(diagram)
   }, [bumpKey, diagrams, renderDiagram, setActiveDiagramType, setEdges, setNodes])
 
+  const handleSelectSystem = useCallback((signature: string) => {
+    const entry = systems.find((system) => system.signature === signature)
+    if (!entry) return
+    selectSystem(signature)
+    // Land on a view this system actually has, so revisiting never shows a
+    // blank canvas just because the last system used a different view.
+    const type = entry.diagrams[activeDiagramType]
+      ? activeDiagramType
+      : DIAGRAM_TYPES.find((candidate) => entry.diagrams[candidate]) ?? activeDiagramType
+    setActiveDiagramType(type)
+    setViewQuery(type)
+    bumpKey()
+    const diagram = entry.diagrams[type]
+    if (diagram) {
+      void renderDiagram(diagram)
+      return
+    }
+    setNodes([])
+    setEdges([])
+  }, [activeDiagramType, bumpKey, renderDiagram, selectSystem, setActiveDiagramType, setEdges, setNodes, systems])
+
   const handleRelayout = () => {
     const diagram = diagrams[activeDiagramType]
     if (!diagram) return
@@ -104,8 +136,43 @@ export default function App() {
   }
 
   const currentDiagram = diagrams[activeDiagramType]
-  const canRegenerate = Boolean(lastRequests[activeDiagramType]) && !isLoading
-  const prompt = <PromptComposer onSubmit={handleGenerate} isLoading={isLoading} />
+  const canRegenerate = Boolean(currentDiagram) && !isLoading
+  const prompt = (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div role="tablist" aria-label="Workspace rail" className="flex shrink-0 border-b border-[var(--border)]">
+        <button
+          type="button" role="tab" id="rail-tab-describe"
+          aria-selected={railTab === 'describe'} aria-controls="rail-panel-describe"
+          onClick={() => setRailTab('describe')} className="rail-tab"
+        >
+          Describe
+        </button>
+        <button
+          type="button" role="tab" id="rail-tab-history"
+          aria-selected={railTab === 'history'} aria-controls="rail-panel-history"
+          onClick={() => setRailTab('history')} className="rail-tab"
+        >
+          History
+          {systems.length ? <span className="rail-tab-count">{systems.length}</span> : null}
+        </button>
+      </div>
+      {railTab === 'describe' ? (
+        <div id="rail-panel-describe" role="tabpanel" aria-labelledby="rail-tab-describe" className="flex min-h-0 flex-1 flex-col">
+          {/* Keyed on the active system so revisiting one refills the form. */}
+          <PromptComposer
+            key={activeSignature || 'new'}
+            initialRequest={currentSystem?.request}
+            onSubmit={handleGenerate}
+            isLoading={isLoading}
+          />
+        </div>
+      ) : (
+        <div id="rail-panel-history" role="tabpanel" aria-labelledby="rail-tab-history" className="flex min-h-0 flex-1 flex-col">
+          <SystemHistory systems={systems} activeSignature={activeSignature} onSelect={handleSelectSystem} />
+        </div>
+      )}
+    </div>
+  )
   const visibleNodes = nodes.filter((node) => node.type !== 'groupNode')
   const nodeLabels = new Map(visibleNodes.map((node) => [node.id, String(node.data.label ?? node.id)]))
   const relationships = edges.map((edge) => {
@@ -140,8 +207,8 @@ export default function App() {
           onFit={() => canvasRef.current?.fit()}
           onExport={() => { void canvasRef.current?.exportPng() }}
           onRegenerate={() => {
-            const request = lastRequests[activeDiagramType]
-            if (request) void handleGenerate(request)
+            const request = currentSystem?.request
+            if (request) void handleGenerate({ ...request, diagram_type: activeDiagramType })
           }}
         />
       )}
@@ -162,7 +229,8 @@ export default function App() {
           {!isLoading && nodes.length === 0 ? (
             <EmptyCanvasState
               onOpenPrompt={() => setPromptOpen(true)}
-              onGenerateExample={() => { void handleGenerate(STARTER_EXAMPLES[0].request) }}
+              exampleLabel={starterExample.label}
+              onGenerateExample={() => { void handleGenerate(starterExample.request) }}
             />
           ) : null}
 

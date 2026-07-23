@@ -147,6 +147,8 @@ export const DiagramCanvas = forwardRef<DiagramCanvasHandle, DiagramCanvasProps>
       <Controls showInteractive={false} />
       <MiniMap
         className="hidden md:block"
+        pannable
+        zoomable
         nodeColor={(n) => (n.data as { color?: string }).color ?? '#6b7280'}
         maskColor="rgba(255,255,255,0.7)"
         style={{ border: '1px solid #e5e7eb', borderRadius: 8 }}

@@ -108,6 +108,17 @@ button:disabled { cursor: not-allowed; }
 .loading-dot { display: inline-block; width: 10px; height: 10px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 999px; animation: spin 700ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.rail-tab { flex: 1; border-bottom: 2px solid transparent; padding: 11px 8px; color: var(--muted); font-size: 12px; font-weight: 600; transition: color 160ms ease, border-color 160ms ease; }
+.rail-tab:hover { color: var(--accent); }
+.rail-tab[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--accent); }
+.rail-tab-count { margin-left: 6px; border-radius: 999px; background: var(--panel); padding: 1px 6px; font-size: 10px; }
+
+.system-card { display: block; width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #fff; padding: 10px 11px; text-align: left; color: #46536a; font-size: 12px; transition: border-color 160ms ease, background 160ms ease, transform 160ms ease; }
+.system-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.system-card--active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.system-dot { margin-top: 5px; width: 7px; height: 7px; flex-shrink: 0; border: 1.5px solid var(--border-strong); border-radius: 50%; }
+.system-dot--active { border-color: var(--accent); background: var(--accent); }
+
 .view-button { border: 0; border-radius: 6px; padding: 7px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .view-button--active { background: #fff; color: var(--accent); box-shadow: 0 1px 3px rgba(23, 32, 51, .1), inset 0 0 0 1px var(--border); }
 .toolbar-button { display: inline-flex; height: 34px; align-items: center; gap: 6px; border-radius: 8px; padding: 0 9px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -122,13 +133,16 @@ button:disabled { cursor: not-allowed; }
   background-position: -1px -1px;
 }
 
-.empty-diagram { position: relative; width: min(100%, 480px); height: 180px; }
+/* Holds the svg's 480x180 ratio so the viewBox scales with no letterboxing, and
+   sizes the nodes in cqw/% off the same box — otherwise the connectors shrink on
+   narrow screens while the px-positioned nodes do not, and nothing lines up. */
+.empty-diagram { position: relative; container-type: inline-size; width: min(100%, 480px); aspect-ratio: 480 / 180; }
 .empty-diagram svg { position: absolute; inset: 0; width: 100%; height: 100%; stroke: #8fa0b7; stroke-width: 1.4; }
-.empty-node { position: absolute; z-index: 1; display: grid; height: 54px; min-width: 104px; place-items: center; border: 1px solid var(--border-strong); border-radius: 9px; background: #fff; color: #47556b; font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; font-size: 11px; box-shadow: 0 5px 18px rgba(23, 32, 51, .06); }
-.empty-node--client { left: 0; top: 63px; }
-.empty-node--gateway { left: calc(50% - 57px); top: 63px; border-color: var(--accent); color: var(--accent); }
-.empty-node--service { right: 0; top: 7px; }
-.empty-node--data { right: 0; bottom: 7px; }
+.empty-node { position: absolute; z-index: 1; display: grid; height: 30%; width: 21.667cqw; place-items: center; border: 1px solid var(--border-strong); border-radius: 9px; background: #fff; color: #47556b; font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; font-size: min(11px, 2.29cqw); box-shadow: 0 5px 18px rgba(23, 32, 51, .06); }
+.empty-node--client { left: 0; top: 35%; }
+.empty-node--gateway { left: 38.125cqw; top: 35%; border-color: var(--accent); color: var(--accent); }
+.empty-node--service { right: 0; top: 3.889%; }
+.empty-node--data { right: 0; bottom: 3.889%; }
 
 .react-flow__node { font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif; }
 .react-flow__edge-text { font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }

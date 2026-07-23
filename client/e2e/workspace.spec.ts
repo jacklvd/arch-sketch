@@ -54,12 +54,17 @@ const lowLevel = {
   ],
 }
 
+/** Returns the diagram types requested so far — the empty state offers a random
+ *  starter, so tests assert against what was actually generated. */
 async function installApi(page: Page) {
+  const requested: string[] = []
   await page.route('http://localhost:8000/api/health/ollama', (route) => route.fulfill({ json: { status: 'online' } }))
   await page.route('http://localhost:8000/api/generate', async (route) => {
     const request = route.request().postDataJSON() as { diagram_type: string }
+    requested.push(request.diagram_type)
     await route.fulfill({ json: request.diagram_type === 'low_level' ? lowLevel : highLevel })
   })
+  return requested
 }
 
 async function overlappingElements(page: Page, selector: string) {
@@ -81,7 +86,7 @@ async function overlappingElements(page: Page, selector: string) {
 
 test('desktop creates a dense diagram without node or group collisions', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await installApi(page)
+  const requested = await installApi(page)
   await page.goto('/')
 
   await expect(page).toHaveTitle('ArchSketch')
@@ -91,9 +96,10 @@ test('desktop creates a dense diagram without node or group collisions', async (
   await expect(page.getByRole('alert')).toContainText('Complete all three constraints')
   await expect(page.getByLabel('Functional requirements')).toBeFocused()
 
-  await page.getByRole('button', { name: 'Generate a video platform' }).click()
+  await page.getByRole('button', { name: /^Generate the .* example$/ }).click()
   await expect(page.locator('.react-flow__node').first()).toBeVisible()
-  expect(new URL(page.url()).searchParams.get('view')).toBe('high_level')
+  // Whichever starter was offered, the URL tracks the view it generated.
+  expect(new URL(page.url()).searchParams.get('view')).toBe(requested.at(-1))
 
   await page.getByRole('button', { name: 'Video platform', exact: true }).click()
   await page.getByRole('button', { name: /^Low-level/ }).click()
@@ -107,6 +113,64 @@ test('desktop creates a dense diagram without node or group collisions', async (
   await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible()
   await expect(page.locator('[aria-live="polite"]')).toContainText('VideoUploadController')
   expect(new URL(page.url()).searchParams.get('view')).toBe('low_level')
+})
+
+test('history keeps each system separately and revisiting restores it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  let generateCalls = 0
+  await page.route('http://localhost:8000/api/health/ollama', (route) => route.fulfill({ json: { status: 'online' } }))
+  await page.route('http://localhost:8000/api/generate', async (route) => {
+    generateCalls += 1
+    const request = route.request().postDataJSON() as { diagram_type: string }
+    await route.fulfill({ json: request.diagram_type === 'low_level' ? lowLevel : highLevel })
+  })
+
+  const rail = page.getByRole('tablist', { name: 'Workspace rail' })
+  const history = page.getByRole('tabpanel', { name: 'History' })
+  const views = page.getByRole('navigation', { name: 'Generated views' })
+  // Scoped: the composer's type buttons and the toolbar's view tabs share labels.
+  const typePicker = page.getByRole('group', { name: 'Diagram type' })
+
+  // System one, two views of the same requirements.
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Video platform', exact: true }).click()
+  await page.getByRole('button', { name: 'Generate diagram' }).click()
+  await expect(page.locator('.react-flow__node').first()).toBeVisible()
+  await typePicker.getByRole('button', { name: /^Low-level/ }).click()
+  await page.getByRole('button', { name: 'Generate diagram' }).click()
+  await expect(page.locator('[aria-live="polite"]')).toContainText('VideoUploadController')
+  expect(generateCalls).toBe(2)
+
+  await rail.getByRole('tab', { name: /^History/ }).click()
+  await expect(history.getByRole('button')).toHaveCount(1)
+  await expect(history.getByRole('button').first()).toContainText('High-level · Low-level')
+
+  // System two: different requirements, so it joins history rather than replacing.
+  await rail.getByRole('tab', { name: 'Describe' }).click()
+  await page.getByLabel('What are you designing?').fill('Design a commerce platform')
+  await typePicker.getByRole('button', { name: /^High-level/ }).click()
+  await page.getByRole('button', { name: 'Generate diagram' }).click()
+  await expect(page.locator('.react-flow__node').first()).toBeVisible()
+  expect(generateCalls).toBe(3)
+
+  await rail.getByRole('tab', { name: /^History/ }).click()
+  await expect(history.getByRole('button')).toHaveCount(2)
+
+  // Revisit the first system: canvas, view tabs, and the form all come back.
+  await history.getByRole('button').nth(1).click()
+  await expect(views.getByRole('button', { name: 'High-level', exact: true })).toBeVisible()
+  await expect(views.getByRole('button', { name: 'Low-level', exact: true })).toBeVisible()
+  expect(generateCalls).toBe(3) // repainted from the cache, not refetched
+
+  await rail.getByRole('tab', { name: 'Describe' }).click()
+  await expect(page.getByLabel('What are you designing?')).toHaveValue(/video streaming/i)
+
+  // Everything survives a refresh, still without refetching.
+  await page.reload()
+  await expect(page.locator('.react-flow__node').first()).toBeVisible()
+  await rail.getByRole('tab', { name: /^History/ }).click()
+  await expect(history.getByRole('button')).toHaveCount(2)
+  expect(generateCalls).toBe(3)
 })
 
 test('mobile prompt traps focus, persists its draft, and restores the URL view', async ({ page }) => {
