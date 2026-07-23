@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { GitHubButton } from './GitHubButton'
 
 interface WorkspaceShellProps {
   prompt: React.ReactNode
@@ -81,10 +82,13 @@ export function WorkspaceShell({
             <BrandMark />
             <span className="text-lg font-semibold tracking-[-0.02em]">ArchSketch</span>
           </div>
-          <button type="button" onClick={onOpenPrompt} className="primary-button px-4 py-2">
-            <EditIcon />
-            Describe
-          </button>
+          <div className="flex items-center gap-2">
+            <GitHubButton compact />
+            <button type="button" onClick={onOpenPrompt} className="primary-button px-4 py-2">
+              <EditIcon />
+              Describe
+            </button>
+          </div>
         </div>
         {toolbar}
         <div className="relative min-h-0 flex-1">{canvas}</div>
@@ -129,6 +133,9 @@ function BrandHeader() {
       <div>
         <div className="text-lg font-semibold tracking-[-0.02em]">ArchSketch</div>
         <div className="text-[11px] text-[var(--muted)]">Architecture drafting workspace</div>
+      </div>
+      <div className="ml-auto">
+        <GitHubButton />
       </div>
     </header>
   )
