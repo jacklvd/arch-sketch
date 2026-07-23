@@ -45,9 +45,10 @@ async def allow(scope, key: str) -> bool:
         outcome = await limiter.limit(to_js({"key": key}, dict_converter=Object.fromEntries))
         return bool(outcome.success)
     except Exception as e:
-        # An unavailable limiter must not take the API down with it. Logged so the
-        # failure is visible in `wrangler tail` instead of silently disabling itself.
-        logger.warning("rate limiter unavailable (%s: %s) — allowing request", type(e).__name__, e)
+        # An unavailable limiter must not take the API down with it. print (not
+        # logging) so it actually reaches `wrangler tail` — Python logging has no
+        # handler in the Worker runtime — making a silent fail-open visible.
+        print(f"rate limiter unavailable ({type(e).__name__}: {e}) — allowing request")
         return True
 
 

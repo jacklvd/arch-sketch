@@ -29,28 +29,15 @@ BACKEND_DIR="$HERE/../backend"
 cd "$WORKER_DIR"
 
 echo "==> Staging backend source into the Worker bundle"
+# Only services/ + prompts/ — the lean worker.py reuses those pure-Python modules.
+# main.py / api/ / models/ are the FastAPI + pydantic parts and stay container-only.
 # Fresh copy every run so a deleted backend file can't linger in the bundle.
-rm -rf main.py api models services prompts
-cp "$BACKEND_DIR/main.py" .
-cp -R "$BACKEND_DIR/api" "$BACKEND_DIR/models" "$BACKEND_DIR/services" "$BACKEND_DIR/prompts" .
+rm -rf services prompts
+cp -R "$BACKEND_DIR/services" "$BACKEND_DIR/prompts" .
 # Drop bytecode so stale __pycache__ never ships.
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
-echo "==> Ensuring the NVIDIA_API_KEY secret is set"
-# `wrangler secret list` prints only names, never values.
-if uv run wrangler secret list 2>/dev/null | grep -q '"name": "NVIDIA_API_KEY"'; then
-  echo "    secret already present — leaving it unchanged"
-elif [[ -n "${NVIDIA_API_KEY:-}" ]]; then
-  echo "    seeding from \$NVIDIA_API_KEY (piped over stdin, not logged)"
-  # printf writes to the pipe only; the value never appears in argv or output.
-  printf '%s' "$NVIDIA_API_KEY" | uv run wrangler secret put NVIDIA_API_KEY
-else
-  echo "    no secret found and \$NVIDIA_API_KEY is unset."
-  echo "    Run this once (it prompts securely, nothing is echoed):"
-  echo "        cd infra/cloudflare && uv run wrangler secret put NVIDIA_API_KEY"
-  exit 1
-fi
-
+# CORS gate runs BEFORE deploy so a misconfigured run fails fast and cheap.
 DEPLOY_ARGS=()
 if [[ -n "${FRONTEND_ORIGIN:-}" ]]; then
   # Override the wrangler.jsonc placeholder so the deployed Worker allows the real
@@ -71,7 +58,31 @@ else
   exit 1
 fi
 
-echo "==> Deploying to Cloudflare (pywrangler → wrangler)"
-uv run pywrangler deploy "${DEPLOY_ARGS[@]}"
+# Deploy in three steps rather than one `pywrangler deploy`, because the vendoring
+# leaves build virtualenvs (.venv, .venv-workers) beside the source, and wrangler
+# uploads EVERYTHING in the directory — three full copies of the deps would blow the
+# 3 MiB free-plan size limit. Only python_modules/ is the runtime package dir.
+echo "==> Vendoring Python deps into python_modules/"
+uv run pywrangler sync
+echo "==> Stripping build virtualenvs so they aren't uploaded (the size killer)"
+rm -rf .venv .venv-workers
+echo "==> Deploying to Cloudflare (npx wrangler, python_modules only)"
+npx --yes wrangler@4 deploy "${DEPLOY_ARGS[@]}"
 
-echo "==> Done. Worker URL is printed above; append /api for the client's VITE_API_BASE."
+# Secrets come AFTER the first deploy: `secret put` needs the Worker to already
+# exist, and a cold start has to create it here first. Secrets persist across later
+# deploys, so this is effectively a no-op once set.
+echo "==> Ensuring the NVIDIA_API_KEY secret is set"
+if uv run pywrangler secret list 2>/dev/null | grep -q '"name": "NVIDIA_API_KEY"'; then
+  echo "    secret already present — leaving it unchanged"
+elif [[ -n "${NVIDIA_API_KEY:-}" ]]; then
+  echo "    seeding from \$NVIDIA_API_KEY (piped over stdin, never logged)"
+  # printf writes to the pipe only; the value never appears in argv or output.
+  printf '%s' "$NVIDIA_API_KEY" | uv run pywrangler secret put NVIDIA_API_KEY
+else
+  echo "    NOTE: no secret set and \$NVIDIA_API_KEY is unset — the Worker is live but"
+  echo "    NVIDIA calls will 500 until you run (prompts securely, nothing echoed):"
+  echo "        cd infra/cloudflare && uv run pywrangler secret put NVIDIA_API_KEY"
+fi
+
+echo "==> Done. Worker URL is printed above; set VITE_API_BASE=<that URL>/api in Vercel."
