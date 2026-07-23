@@ -2,6 +2,9 @@
 name = "arch-sketch-worker"
 version = "0.1.0"
 description = "Cloudflare Python Worker bundling the arch-sketch FastAPI backend"
+# 3.13, not backend's 3.14: the Worker runs Pyodide, which trails CPython. The copied
+# backend source uses no 3.14-only syntax (only `X | Y` unions, PEP 585 generics — all
+# ≥3.10), so it runs unchanged at the edge. Bump when Pyodide ships 3.14.
 requires-python = ">=3.13"
 
 # Worker-only deps. Deliberately a DIFFERENT set from backend/pyproject.toml:

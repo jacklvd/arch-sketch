@@ -1,6 +1,9 @@
 import os
 import asyncio
+import logging
 import httpx
+
+logger = logging.getLogger(__name__)
 
 NVIDIA_BASE = "https://integrate.api.nvidia.com/v1"
 
@@ -96,9 +99,13 @@ async def generate(prompt: str) -> str:
                 if text:
                     return text
                 errors.append(f"{model}: empty response")
+            except httpx.HTTPStatusError as e:
+                # The response body can echo the prompt back and this string surfaces
+                # to the client as a 500 — so log the body server-side and keep only
+                # the status code in the client-visible error.
+                logger.warning("%s -> HTTP %s: %s", model, e.response.status_code, e.response.text)
+                errors.append(f"{model}: HTTP {e.response.status_code}")
             except Exception as e:
-                # Never interpolate the response body here — a provider error can
-                # echo the request, and this string reaches the client as a 500.
                 errors.append(f"{model}: {type(e).__name__}: {e}")
 
     raise RuntimeError("All NVIDIA models failed. " + "; ".join(errors))

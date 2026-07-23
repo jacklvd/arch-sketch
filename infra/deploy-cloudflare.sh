@@ -57,9 +57,18 @@ if [[ -n "${FRONTEND_ORIGIN:-}" ]]; then
   # frontend. localhost stays in for split local testing against a remote Worker.
   DEPLOY_ARGS+=(--var "ALLOWED_ORIGINS:http://localhost:5173,${FRONTEND_ORIGIN}")
   echo "==> ALLOWED_ORIGINS will include ${FRONTEND_ORIGIN}"
+elif [[ "${ALLOW_LOCALHOST_ONLY:-}" == "1" ]]; then
+  # Escape hatch for smoke-testing the Worker in isolation before a frontend exists.
+  echo "==> ALLOW_LOCALHOST_ONLY=1 — deploying with localhost-only CORS on purpose."
 else
-  echo "==> WARNING: FRONTEND_ORIGIN unset — deployed CORS allows only localhost."
-  echo "    Re-run with FRONTEND_ORIGIN=https://<your-app>.vercel.app to fix prod CORS."
+  # A live deploy whose CORS blocks the real frontend is worse than no deploy, so
+  # this is fatal rather than a warning. The Vercel URL always exists first (its Git
+  # integration deploys independently), so FRONTEND_ORIGIN is knowable by this point.
+  echo "ERROR: FRONTEND_ORIGIN is unset — the deployed Worker would block the Vercel"
+  echo "  frontend via CORS. Re-run with the real origin:"
+  echo "    FRONTEND_ORIGIN=https://<your-app>.vercel.app ./infra/deploy-cloudflare.sh"
+  echo "  Or, to deploy the Worker alone for a smoke test: ALLOW_LOCALHOST_ONLY=1 ..."
+  exit 1
 fi
 
 echo "==> Deploying to Cloudflare (pywrangler → wrangler)"
