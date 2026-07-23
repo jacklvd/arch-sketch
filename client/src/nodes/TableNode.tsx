@@ -13,11 +13,11 @@ export function TableNode({ data }: { data: TableNodeData }) {
   const columns = data.metadata?.columns ?? []
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden min-w-52 select-none">
+    <div className="h-full w-full rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden select-none">
       <Handle type="source" position={Position.Top}    style={handleStyle} id="top-s" />
       <Handle type="target" position={Position.Top}    style={handleStyle} id="top-t" />
-      <Handle type="source" position={Position.Bottom} style={handleStyle} id="bot-s" />
-      <Handle type="target" position={Position.Bottom} style={handleStyle} id="bot-t" />
+      <Handle type="source" position={Position.Bottom} style={handleStyle} id="bottom-s" />
+      <Handle type="target" position={Position.Bottom} style={handleStyle} id="bottom-t" />
       <Handle type="source" position={Position.Left}   style={handleStyle} id="left-s" />
       <Handle type="target" position={Position.Left}   style={handleStyle} id="left-t" />
       <Handle type="source" position={Position.Right}  style={handleStyle} id="right-s" />

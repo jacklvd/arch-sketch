@@ -1,21 +1,33 @@
-import { useCallback, useEffect, useState } from 'react'
-import { generateDiagram, checkOllamaHealth } from './api/generate'
-import { InputForm } from './components/InputForm'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { checkOllamaHealth, generateDiagram } from './api/generate'
 import { DiagramCanvas } from './components/DiagramCanvas'
-import { DiagramTabs } from './components/DiagramTabs'
+import type { DiagramCanvasHandle } from './components/DiagramCanvas'
+import { EmptyCanvasState } from './components/EmptyCanvasState'
+import { PromptComposer, STARTER_EXAMPLES } from './components/PromptComposer'
+import { WorkspaceShell } from './components/WorkspaceShell'
+import { WorkspaceToolbar } from './components/WorkspaceToolbar'
 import { mapToReactFlow } from './lib/diagramMapper'
 import { applyLayoutWithGroups } from './lib/layoutEngine'
 import { useDiagramStore } from './store/diagramStore'
-import type { DiagramType, GenerateRequest } from './types/diagram'
+import type { DiagramData, DiagramType, GenerateRequest } from './types/diagram'
 
-function getLayoutOptions(dt: DiagramType) {
+function getLayoutOptions(diagramType: DiagramType) {
   return {
-    direction: (dt === 'database' || dt === 'low_level' ? 'TB' : 'LR') as 'LR' | 'TB',
-    nodeWidth:  dt === 'database' ? 220 : dt === 'api' ? 240 : dt === 'low_level' ? 220 : 160,
-    nodeHeight: dt === 'database' ? 200 : dt === 'api' ? 160 : dt === 'low_level' ? 200 : 90,
-    nodeSep:    dt === 'database' ? 60  : dt === 'api' ? 60  : dt === 'low_level' ? 60  : 80,
-    rankSep:    dt === 'database' ? 100 : dt === 'api' ? 180 : dt === 'low_level' ? 120 : 140,
+    direction: (diagramType === 'database' || diagramType === 'low_level' ? 'TB' : 'LR') as 'LR' | 'TB',
+    nodeSep: diagramType === 'high_level' ? 84 : 64,
+    rankSep: diagramType === 'api' ? 180 : diagramType === 'high_level' ? 150 : 112,
   }
+}
+
+function setViewQuery(type: DiagramType) {
+  const url = new URL(window.location.href)
+  url.searchParams.set('view', type)
+  window.history.replaceState(null, '', url)
+}
+
+function getViewQuery(): DiagramType | null {
+  const view = new URLSearchParams(window.location.search).get('view')
+  return view === 'high_level' || view === 'database' || view === 'api' || view === 'low_level' ? view : null
 }
 
 export default function App() {
@@ -26,148 +38,145 @@ export default function App() {
     setLoading, setError, setDiagram, setNodes, setEdges,
     setLastRequest, bumpKey, setActiveDiagramType,
   } = useDiagramStore()
-
-  const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline' | 'unknown'>('unknown')
+  const [providerStatus, setProviderStatus] = useState<'online' | 'offline' | 'unknown'>('unknown')
+  const [promptOpen, setPromptOpen] = useState(false)
+  const canvasRef = useRef<DiagramCanvasHandle>(null)
 
   useEffect(() => {
-    checkOllamaHealth().then((r) => setOllamaStatus(r.status))
+    checkOllamaHealth().then((result) => setProviderStatus(result.status))
   }, [])
 
-  const renderDiagram = useCallback((diagram: NonNullable<typeof diagrams[DiagramType]>) => {
-    const { nodes: rfNodes, edges: rfEdges } = mapToReactFlow(diagram)
-    const layoutedNodes = applyLayoutWithGroups(rfNodes, rfEdges, getLayoutOptions(diagram.diagramType))
-    setNodes(layoutedNodes)
-    setEdges(rfEdges)
-  }, [setNodes, setEdges])
+  useEffect(() => {
+    const requestedView = getViewQuery()
+    if (requestedView && requestedView !== activeDiagramType) {
+      setActiveDiagramType(requestedView)
+      setNodes([])
+      setEdges([])
+    }
+  }, [activeDiagramType, setActiveDiagramType, setEdges, setNodes])
 
-  const handleGenerate = async (req: GenerateRequest) => {
-    setLastRequest(req.diagram_type, req)
+  const renderDiagram = useCallback(async (diagram: DiagramData) => {
+    const mapped = mapToReactFlow(diagram)
+    const layout = await applyLayoutWithGroups(
+      mapped.nodes,
+      mapped.edges,
+      getLayoutOptions(diagram.diagramType),
+    )
+    setNodes(layout.nodes)
+    setEdges(layout.edges)
+  }, [setEdges, setNodes])
+
+  const handleGenerate = async (request: GenerateRequest) => {
+    setLastRequest(request.diagram_type, request)
     setLoading(true)
     setError(null)
     try {
-      const diagram = await generateDiagram(req)
-      setDiagram(req.diagram_type, diagram)
-      renderDiagram(diagram)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Generation failed'
-      setError(msg)
+      const diagram = await generateDiagram(request)
+      setDiagram(request.diagram_type, diagram)
+      setViewQuery(request.diagram_type)
+      await renderDiagram(diagram)
+      setPromptOpen(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Generation failed.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSwitchTab = useCallback((type: DiagramType) => {
+  const handleSwitchView = useCallback((type: DiagramType) => {
     const diagram = diagrams[type]
     setActiveDiagramType(type)
+    setViewQuery(type)
     bumpKey()
     if (!diagram) {
       setNodes([])
       setEdges([])
       return
     }
-    renderDiagram(diagram)
-  }, [diagrams, setActiveDiagramType, bumpKey, setNodes, setEdges, renderDiagram])
+    void renderDiagram(diagram)
+  }, [bumpKey, diagrams, renderDiagram, setActiveDiagramType, setEdges, setNodes])
 
-  const handleRegenerate = () => {
-    const req = lastRequests[activeDiagramType]
-    if (req) handleGenerate(req)
+  const handleRelayout = () => {
+    const diagram = diagrams[activeDiagramType]
+    if (!diagram) return
+    bumpKey()
+    void renderDiagram(diagram)
   }
 
   const currentDiagram = diagrams[activeDiagramType]
   const canRegenerate = Boolean(lastRequests[activeDiagramType]) && !isLoading
+  const prompt = <PromptComposer onSubmit={handleGenerate} isLoading={isLoading} />
+  const visibleNodes = nodes.filter((node) => node.type !== 'groupNode')
+  const nodeLabels = new Map(visibleNodes.map((node) => [node.id, String(node.data.label ?? node.id)]))
+  const relationships = edges.map((edge) => {
+    const source = nodeLabels.get(edge.source) ?? edge.source
+    const target = nodeLabels.get(edge.target) ?? edge.target
+    const relationship = edge.label ? ` (${String(edge.label)})` : ''
+    return `${source} to ${target}${relationship}`
+  })
+  const canvasSummary = visibleNodes.length
+    ? `${currentDiagram?.title ?? 'Architecture diagram'}. Nodes: ${visibleNodes.map((node) => nodeLabels.get(node.id)).join(', ')}. Relationships: ${relationships.join('; ') || 'none'}.`
+    : 'No diagram generated yet.'
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden" style={{ fontFamily: 'system-ui, sans-serif' }}>
-      {/* Sidebar */}
-      <aside className="w-80 min-w-[320px] flex flex-col border-r border-gray-200 bg-white overflow-y-auto">
-        <div className="px-5 py-4 border-b border-gray-100 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">⬡</span>
-              <div>
-                <h1 className="text-base font-bold text-gray-900 leading-tight">ArchSketch</h1>
-                <p className="text-[11px] text-gray-400">AI System Design Generator</p>
+    <WorkspaceShell
+      prompt={prompt}
+      promptOpen={promptOpen}
+      onOpenPrompt={() => setPromptOpen(true)}
+      onClosePrompt={() => setPromptOpen(false)}
+      toolbar={(
+        <WorkspaceToolbar
+          activeType={activeDiagramType}
+          diagrams={diagrams}
+          title={currentDiagram?.title ?? 'Architecture workspace'}
+          nodeCount={visibleNodes.length}
+          edgeCount={edges.length}
+          canvasSummary={canvasSummary}
+          providerStatus={providerStatus}
+          error={error}
+          canRegenerate={canRegenerate}
+          onSwitch={handleSwitchView}
+          onRelayout={handleRelayout}
+          onFit={() => canvasRef.current?.fit()}
+          onExport={() => { void canvasRef.current?.exportPng() }}
+          onRegenerate={() => {
+            const request = lastRequests[activeDiagramType]
+            if (request) void handleGenerate(request)
+          }}
+        />
+      )}
+      canvas={(
+        <>
+          {isLoading ? (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--paper)]/80 backdrop-blur-[2px]">
+              <div className="rounded-xl border border-[var(--border)] bg-white px-5 py-4 shadow-lg">
+                <div className="flex items-center gap-3 text-sm font-medium">
+                  <span className="loading-dot" aria-hidden="true" />
+                  Generating {activeDiagramType.replace('_', ' ')} view…
+                </div>
+                <p className="mt-1 pl-6 text-xs text-[var(--muted)]">Mapping services, relationships, and constraints.</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: ollamaStatus === 'online' ? '#10b981' : ollamaStatus === 'offline' ? '#ef4444' : '#d1d5db' }}
-              />
-              <span className="text-[10px] text-gray-400">
-                {ollamaStatus === 'online' ? 'Ollama' : ollamaStatus === 'offline' ? 'Ollama offline' : ''}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 px-5 py-4">
-          <InputForm onSubmit={handleGenerate} isLoading={isLoading} />
-        </div>
-      </aside>
+          ) : null}
 
-      {/* Canvas */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white shrink-0 gap-3">
-          <DiagramTabs
-            activeType={activeDiagramType}
-            diagrams={diagrams}
-            onSwitch={handleSwitchTab}
-          />
+          {!isLoading && nodes.length === 0 ? (
+            <EmptyCanvasState
+              onOpenPrompt={() => setPromptOpen(true)}
+              onGenerateExample={() => { void handleGenerate(STARTER_EXAMPLES[0].request) }}
+            />
+          ) : null}
 
-          <div className="flex items-center gap-2 shrink-0">
-            {error && (
-              <span className="text-xs text-red-500 bg-red-50 border border-red-100 px-3 py-1 rounded-full max-w-xs truncate">
-                {error}
-              </span>
-            )}
-            {canRegenerate && (
-              <button
-                onClick={handleRegenerate}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:text-gray-800 hover:border-gray-300 transition-all"
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M13.5 8A5.5 5.5 0 112.5 5M2.5 2v3h3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Regenerate
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 relative">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
-              <div className="text-center">
-                <svg className="animate-spin h-8 w-8 text-violet-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                <p className="text-sm text-gray-400">Generating diagram...</p>
-              </div>
-            </div>
-          )}
-
-          {!isLoading && nodes.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-5xl mb-4 opacity-20">⬡</div>
-                <p className="text-gray-400 text-sm">Select a diagram type and click Generate Diagram</p>
-              </div>
-            </div>
-          )}
-
-          {nodes.length > 0 && (
+          {nodes.length > 0 ? (
             <DiagramCanvas
+              ref={canvasRef}
               key={diagramKey}
               nodes={nodes}
               edges={edges}
               title={currentDiagram?.title ?? ''}
             />
-          )}
-        </div>
-      </main>
-    </div>
+          ) : null}
+        </>
+      )}
+    />
   )
 }

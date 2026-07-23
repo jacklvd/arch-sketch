@@ -7,12 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "node --test src/**/*.test.ts",
+    "test:e2e": "playwright test",
     "preview": "vite preview"
   },
   "dependencies": {
     "@xyflow/react": "^12.10.2",
-    "axios": "^1.15.2",
-    "dagre": "^0.8.5",
+    "elkjs": "^0.12.0",
     "html-to-image": "^1.11.13",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -21,10 +22,10 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.55.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/vite": "^4.2.4",
     "@types/babel__core": "^7.20.5",
-    "@types/dagre": "^0.7.54",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

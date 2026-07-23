@@ -13,7 +13,7 @@ Fill in your system requirements (quest, functional/non-functional requirements,
 | Frontend | Vite + React 19 + TypeScript |
 | Styling | Tailwind CSS v4 |
 | Diagrams | React Flow (`@xyflow/react`) |
-| Auto-layout | dagre |
+| Auto-layout | ELK Layered |
 | State | Zustand |
 | Backend | FastAPI (Python 3.14) |
 | Local AI | Ollama — `gemma4:e2b` |
@@ -32,7 +32,7 @@ arch-sketch/
 │   └── prompts/                 # Prompt templates per diagram type
 ├── client/
 │   ├── src/
-│   │   ├── api/                 # Axios API client
+│   │   ├── api/                 # Fetch API client
 │   │   ├── components/          # InputForm, DiagramCanvas, DiagramTabs
 │   │   ├── nodes/               # Custom React Flow nodes
 │   │   ├── edges/               # Custom React Flow edges

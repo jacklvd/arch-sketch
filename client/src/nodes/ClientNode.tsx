@@ -15,13 +15,13 @@ export function ClientNode({ data }: { data: ClientNodeData }) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-2xl border-2 bg-white shadow-sm px-4 py-3 min-w-28 max-w-36 select-none cursor-default"
+      className="flex h-full w-full flex-col items-center justify-center rounded-2xl border bg-white shadow-sm px-4 py-3 select-none cursor-default"
       style={{ borderColor: `${data.color}60`, backgroundColor: `${data.color}06` }}
     >
-      <Handle type="target" position={Position.Left}   style={handleStyle} />
-      <Handle type="target" position={Position.Top}    style={handleStyle} />
-      <Handle type="source" position={Position.Right}  style={handleStyle} />
-      <Handle type="source" position={Position.Bottom} style={handleStyle} />
+      <Handle id="left-t" type="target" position={Position.Left} style={handleStyle} />
+      <Handle id="top-t" type="target" position={Position.Top} style={handleStyle} />
+      <Handle id="right-s" type="source" position={Position.Right} style={handleStyle} />
+      <Handle id="bottom-s" type="source" position={Position.Bottom} style={handleStyle} />
 
       <div className="flex items-center justify-center w-10 h-10 rounded-xl mb-2" style={{ backgroundColor: `${data.color}15` }}>
         {icon.src ? (

@@ -73,6 +73,7 @@ export function mapToReactFlow(diagram: DiagramData): { nodes: Node[]; edges: Ed
       source: e.source,
       target: e.target,
       label: e.label,
+      type: 'smoothstep',
       animated: e.style === 'animated',
       style: e.style === 'dashed'
         ? { strokeDasharray: '6,4', stroke: '#d1d5db', strokeWidth: 1.5 }

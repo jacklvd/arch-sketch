@@ -14,10 +14,11 @@ export function ArchitectureNode({ data }: { data: ArchitectureNodeData }) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-xl border-2 bg-white shadow-sm px-3 py-2.5 min-w-35 max-w-40 cursor-default select-none"
+      className="flex h-full w-full flex-col items-center justify-center rounded-xl border bg-white px-3 py-2.5 shadow-sm cursor-default select-none"
       style={{ borderColor: data.color }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: '#d1d5db', width: 8, height: 8, border: 'none' }} />
+      <Handle id="left-t" type="target" position={Position.Left} style={{ background: '#94a3b8', width: 8, height: 8, border: '2px solid white' }} />
+      <Handle id="top-t" type="target" position={Position.Top} style={{ background: '#94a3b8', width: 8, height: 8, border: '2px solid white' }} />
 
       <div className="mb-1.5 flex items-center justify-center w-9 h-9">
         {icon.src ? (
@@ -39,7 +40,8 @@ export function ArchitectureNode({ data }: { data: ArchitectureNodeData }) {
         </div>
       )}
 
-      <Handle type="source" position={Position.Right} style={{ background: '#d1d5db', width: 8, height: 8, border: 'none' }} />
+      <Handle id="right-s" type="source" position={Position.Right} style={{ background: '#94a3b8', width: 8, height: 8, border: '2px solid white' }} />
+      <Handle id="bottom-s" type="source" position={Position.Bottom} style={{ background: '#94a3b8', width: 8, height: 8, border: '2px solid white' }} />
     </div>
   )
 }
