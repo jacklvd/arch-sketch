@@ -62,6 +62,8 @@ flowchart TD
     class C,D,E,F ai;
 ```
 
+<sub>🔵 runs in your browser (React + ELK layout) · 🟢 the generation pipeline (prompt → model → repair)</sub>
+
 Two ways it runs: **local** (`docker compose` — client + FastAPI + Ollama) and
 **deployed** (static client on **Vercel** → lean Python **Cloudflare Worker** → NVIDIA NIM).
 The Worker reuses the container's pure-Python logic without FastAPI — see
