@@ -1,5 +1,9 @@
 import os
 import asyncio
+import logging
+import httpx
+
+logger = logging.getLogger(__name__)
 
 NVIDIA_BASE = "https://integrate.api.nvidia.com/v1"
 
@@ -11,8 +15,8 @@ NVIDIA_BASE = "https://integrate.api.nvidia.com/v1"
 # dev-note: models smoked and rejected — deepseek-v4-pro (~90s hang),
 # minimaxai/minimax-m3 (>100s), moonshotai/kimi-k2.6 (404, not hosted). Also tested
 # working but demoted: nvidia/nemotron-3-ultra-550b-a55b (valid but ~98s — re-add as
-# a last rung only if you raise _TIMEOUT_S to ~110s). Smoke any addition on the REAL
-# prompt for latency before wiring it.
+# a last rung only if you raise NVIDIA_TIMEOUT_S to ~110s). Smoke any addition on the
+# REAL prompt for latency before wiring it.
 NVIDIA_MODELS = [
     "mistralai/mistral-small-4-119b-2603",  # primary: fastest (~12s), full-quality output
     "z-ai/glm-5.2",                         # ~33s, most-proven / strongest JSON
@@ -20,11 +24,17 @@ NVIDIA_MODELS = [
     "minimaxai/minimax-m2.7",               # ~38s (NB: m2.7 works; m3 times out)
 ]
 
+# How far down NVIDIA_MODELS a single request may walk. The ceiling is
+# MAX_MODELS * _TIMEOUT_S, and a browser tab that spins for five minutes has
+# already lost the user — two rungs (120s worst case, ~12s typical) covers the
+# realistic failure of the primary stalling. docker-compose sets 4 locally so the
+# full chain still gets exercised in dev.
+MAX_MODELS = max(1, int(os.getenv("NVIDIA_MAX_MODELS", "2")))
+
 # Per-request cap so a stalled model fails over to the next instead of freezing the
-# whole request. Every wired model finishes in <40s on the real prompt, so 75s is
-# ~2x headroom for a heavier prompt while still failing over promptly. Ollama is the
-# net if all four fail.
-_TIMEOUT_S = 75.0
+# whole request. Every wired model finishes in <40s on the real prompt, so 60s is
+# ~1.5x headroom for a heavier prompt while still failing over promptly.
+_TIMEOUT_S = float(os.getenv("NVIDIA_TIMEOUT_S", "60"))
 
 _SYSTEM = (
     "You are a system-design diagram generator. Respond ONLY with a single valid "
@@ -35,50 +45,68 @@ _SYSTEM = (
 async def generate(prompt: str) -> str:
     """Generate a raw JSON diagram string via NVIDIA NIM (OpenAI-compatible).
 
-    Tries each model in NVIDIA_MODELS until one returns a non-empty body; raises
-    RuntimeError with every model's error if all fail, so the router can fall back
-    to Ollama. Runs the sync SDK in an executor to stay non-blocking, matching the
-    async contract the rest of the app expects.
-    """
-    try:
-        from openai import OpenAI
-    except ImportError:
-        raise RuntimeError("openai not installed. Run: uv add openai")
+    Tries each model in NVIDIA_MODELS[:MAX_MODELS] until one returns a non-empty
+    body; raises RuntimeError with every model's error if all fail, so the router
+    can fall back to Ollama.
 
+    Uses httpx rather than the openai SDK deliberately: the endpoint is a plain
+    OpenAI-shaped POST, and Cloudflare Python Workers support only *async* HTTP
+    clients (aiohttp/httpx) — the sync `OpenAI` client cannot be bridged to the
+    Fetch API, so this is what lets the Worker and the container share one file.
+    """
     api_key = os.getenv("NVIDIA_API_KEY", "")
     if not api_key:
         raise RuntimeError("NVIDIA_API_KEY environment variable not set")
 
-    # max_retries=0: the loop below is our fallback mechanism, so the SDK must not
-    # burn 2 extra retries (up to 3×_TIMEOUT_S) on a stalled model before we move on.
-    client = OpenAI(base_url=NVIDIA_BASE, api_key=api_key, timeout=_TIMEOUT_S, max_retries=0)
-    loop = asyncio.get_event_loop()
     errors: list[str] = []
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
 
-    for model in NVIDIA_MODELS:
-        try:
-            resp = await loop.run_in_executor(
-                None,
-                # m=model binds per-iteration; a bare `model` would late-bind to the last.
-                lambda m=model: client.chat.completions.create(
-                    model=m,
-                    messages=[
-                        {"role": "system", "content": _SYSTEM},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.2,
-                    # dev-note: assumes every model above supports json_object mode.
-                    # A model that doesn't will 400 and fall through to the next —
-                    # acceptable here; add a plain-retry per model only if that ever bites.
-                    response_format={"type": "json_object"},
-                ),
-            )
-            text = (resp.choices[0].message.content or "").strip() if resp.choices else ""
-            if text:
-                return text
-            errors.append(f"{model}: empty response")
-        except Exception as e:
-            errors.append(f"{model}: {e}")
+    async with httpx.AsyncClient(timeout=_TIMEOUT_S) as client:
+        for model in NVIDIA_MODELS[:MAX_MODELS]:
+            try:
+                # dev-note: asyncio.wait_for on top of the httpx timeout, because on
+                # Workers httpx runs through an FFI shim to fetch() whose timeout
+                # honouring is unverified. Failover is the whole point of the loop,
+                # so the cap gets enforced on our side too. Drop if it ever proves
+                # redundant on both runtimes.
+                resp = await asyncio.wait_for(
+                    client.post(
+                        f"{NVIDIA_BASE}/chat/completions",
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "system", "content": _SYSTEM},
+                                {"role": "user", "content": prompt},
+                            ],
+                            "temperature": 0.2,
+                            # dev-note: assumes every model above supports json_object
+                            # mode. One that doesn't will 400 and fall through to the
+                            # next — acceptable here; add a plain-retry per model only
+                            # if that ever bites.
+                            "response_format": {"type": "json_object"},
+                        },
+                    ),
+                    timeout=_TIMEOUT_S,
+                )
+                resp.raise_for_status()
+                choices = resp.json().get("choices") or []
+                text = (choices[0]["message"]["content"] or "").strip() if choices else ""
+                if text:
+                    return text
+                errors.append(f"{model}: empty response")
+            except httpx.HTTPStatusError as e:
+                # The response body can echo the prompt back and this string surfaces
+                # to the client as a 500 — so log the body server-side and keep only
+                # the status code in the client-visible error.
+                logger.warning("%s -> HTTP %s: %s", model, e.response.status_code, e.response.text)
+                errors.append(f"{model}: HTTP {e.response.status_code}")
+            except Exception as e:
+                errors.append(f"{model}: {type(e).__name__}: {e}")
 
     raise RuntimeError("All NVIDIA models failed. " + "; ".join(errors))
 

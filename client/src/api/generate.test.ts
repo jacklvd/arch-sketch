@@ -37,6 +37,8 @@ test('generateDiagram posts the existing request contract with fetch', async () 
   const result = await generateDiagram(request)
 
   assert.deepEqual(result, diagram)
+  // Falls back to localhost when VITE_API_BASE is unset — which it is under the
+  // node test runner (import.meta.env only exists in a Vite build).
   assert.equal(capturedUrl, 'http://localhost:8000/api/generate')
   assert.equal(capturedInit?.method, 'POST')
   assert.deepEqual(capturedInit?.headers, { 'Content-Type': 'application/json' })

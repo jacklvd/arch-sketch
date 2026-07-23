@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arch-sketch-api",
+  "main": "worker.py",
+  // Bump to today's date when you next touch this; pins runtime behaviour.
+  "compatibility_date": "2026-07-23",
+  // python_workers: the Pyodide runtime. nodejs_compat: pulls in the os/process
+  // shims the FastAPI stack expects.
+  "compatibility_flags": ["python_workers", "nodejs_compat"],
+
+  "observability": {
+    "enabled": true // free; lets `wrangler tail` show the rate-limit + provider logs
+  },
+
+  // Public, non-secret config. NVIDIA_API_KEY is intentionally ABSENT — it is a
+  // secret set out-of-band with `wrangler secret put NVIDIA_API_KEY` and must never
+  // be committed here. ALLOWED_ORIGINS must list the deployed Vercel origin or the
+  // browser gets a CORS failure.
+  "vars": {
+    "ALLOWED_ORIGINS": "http://localhost:5173",
+    // Prod caps the fallback chain at 2 models (~120s worst case vs ~300s).
+    "NVIDIA_MAX_MODELS": "2",
+    "NVIDIA_TIMEOUT_S": "60"
+  },
+
+  // Built-in rate limiter — no KV/Durable Object, counts per edge location. This is
+  // the guard on the NVIDIA free-tier quota: services/rate_limit.py calls
+  // env.GENERATE_LIMIT.limit() on /api/generate only. 20 generations / 60s / IP is
+  // generous for a real user and cheap for a scraper to hit.
+  "ratelimits": [
+    {
+      "name": "GENERATE_LIMIT",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    }
+  ]
+}
